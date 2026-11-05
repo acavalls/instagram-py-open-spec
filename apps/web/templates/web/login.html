@@ -1,0 +1,16 @@
+{% extends "web/base_auth.html" %}
+
+{% block title %}Log in · Instagram{% endblock %}
+
+{% block auth_form %}
+<form method="post" action="{% url 'web:login' %}" class="auth-form">
+  {% csrf_token %}
+  {% if error %}<p class="form-error">{{ error }}</p>{% endif %}
+  <input type="text" name="username" placeholder="Username" required autofocus>
+  <input type="password" name="password" placeholder="Password" required>
+  <button type="submit" class="btn-primary">Log in</button>
+</form>
+<p class="auth-switch">
+  Don't have an account? <a href="{% url 'web:register' %}">Sign up</a>
+</p>
+{% endblock %}

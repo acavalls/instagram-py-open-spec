@@ -1,0 +1,27 @@
+# Python
+.venv/
+.env
+__pycache__/
+*.py[cod]
+
+# Django
+*.log
+db.sqlite3
+media/
+staticfiles/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Testing
+.coverage
+.pytest_cache/
+
+# Linting
+.ruff_cache/
+.mypy_cache/
+
+# OS
+.DS_Store

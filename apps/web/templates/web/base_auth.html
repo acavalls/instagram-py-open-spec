@@ -1,0 +1,17 @@
+{% extends "web/base.html" %}
+
+{% block content %}
+<div class="auth-wrap">
+  <div class="phone-mockup">
+    <div class="phone-screen">
+      <div class="phone-post"></div>
+      <div class="phone-post"></div>
+      <div class="phone-post"></div>
+    </div>
+  </div>
+  <div class="auth-card">
+    <h1 class="auth-logo">Instagram</h1>
+    {% block auth_form %}{% endblock %}
+  </div>
+</div>
+{% endblock %}

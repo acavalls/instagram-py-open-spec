@@ -1,0 +1,35 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Instagram{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Grand+Hotel&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'web/css/web.css' %}">
+</head>
+<body>
+  <nav class="topbar">
+    <a href="{% url 'web:index' %}" class="logo">Instagram</a>
+    <div class="topbar-right">
+      {% if user.is_authenticated %}
+        <span class="topbar-user">@{{ user.username }}</span>
+        <form method="post" action="{% url 'web:logout' %}">{% csrf_token %}
+          <button type="submit" class="link-btn">Log out</button>
+        </form>
+      {% else %}
+        <a href="{% url 'web:login' %}" class="link-btn">Log in</a>
+        <a href="{% url 'web:register' %}" class="link-btn">Sign up</a>
+      {% endif %}
+    </div>
+  </nav>
+
+  {% include "web/_messages.html" %}
+
+  <main class="main">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>
