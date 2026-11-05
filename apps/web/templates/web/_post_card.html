@@ -1,0 +1,48 @@
+{% if render_toasts %}{% include "web/_messages.html" %}{% endif %}
+<article class="post-card" id="post-{{ post.id }}">
+  <div class="post-card__media">
+    {% if post.media.all %}
+      <img src="{{ post.media.all.0.file.url }}" alt="Post by {{ post.owner.username }}">
+    {% else %}
+      <div class="post-card__placeholder">no media</div>
+    {% endif %}
+  </div>
+
+  <div class="post-card__content">
+    <p class="post-card__caption">
+      <span class="post-card__username">@{{ post.owner.username }}</span>
+      <span class="post-card__caption-text">{{ post.caption }}</span>
+    </p>
+    <time class="post-card__time" datetime="{{ post.created_at|date:'c' }}">
+      {{ post.created_at|timesince }} ago
+    </time>
+  </div>
+
+  {% if user.is_authenticated and post.owner.id == user.id %}
+  <div class="post-card__menu-wrapper">
+    <button
+      class="post-card__menu-btn"
+      title="Menu"
+      onclick="this.closest('.post-card').querySelector('.post-card__menu').classList.toggle('hidden')"
+    >&middot;&middot;&middot;</button>
+    <div class="post-card__menu hidden">
+      <button
+        class="post-card__menu-item"
+        hx-get="{% url 'web:get_edit_form' post.id %}"
+        hx-target="#edit-form-{{ post.id }}"
+        hx-swap="outerHTML"
+      >Edit</button>
+      <form
+        hx-post="{% url 'web:delete_post' post.id %}"
+        hx-target="#post-{{ post.id }}"
+        hx-swap="outerHTML"
+      >
+        {% csrf_token %}
+        <button type="submit" class="post-card__menu-item post-card__menu-item--delete">Delete</button>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="post-card__edit-form-wrapper hidden" id="edit-form-{{ post.id }}"></div>
+</article>

@@ -1,0 +1,21 @@
+<div class="post-card__edit-form-wrapper" id="edit-form-{{ post.id }}">
+  <form
+    hx-post="{% url 'web:submit_edit' post.id %}"
+    hx-target="#post-{{ post.id }}"
+    hx-swap="outerHTML"
+    class="post-card__edit-form"
+  >
+    {% csrf_token %}
+    <input type="text" name="caption" value="{{ post.caption }}" class="post-card__edit-input" required>
+    <div class="post-card__edit-actions">
+      <button type="submit" class="btn-primary btn-sm">Confirm</button>
+      <button
+        type="button"
+        class="btn-secondary btn-sm"
+        hx-get="{% url 'web:cancel_edit' post.id %}"
+        hx-target="#edit-form-{{ post.id }}"
+        hx-swap="outerHTML"
+      >Cancel</button>
+    </div>
+  </form>
+</div>
