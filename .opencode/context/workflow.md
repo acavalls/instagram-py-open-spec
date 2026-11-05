@@ -123,6 +123,10 @@ same mechanism): ask the user before writing anything.
 
    Merges the delta into `openspec/specs/<capability>/spec.md` (the anchor).
 
+   8.B. **Commit (archive).** The user commits the new living spec and the
+   archived change, then pushes. The agent announces the gate; audit (stage
+   9) must run on a clean tree because it uses `git log` as evidence.
+
 9. **Run the spec-audit skill:**
 
    ```
