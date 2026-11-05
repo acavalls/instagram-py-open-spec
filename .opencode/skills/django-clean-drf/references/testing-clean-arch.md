@@ -92,7 +92,7 @@ class OrderFactory(DjangoModelFactory):
     id = factory.LazyFunction(uuid4)
     customer = factory.SubFactory(CustomerFactory)
     status = Order.Status.PENDING
-    notes = factory.Faker('sentence')
+    notes = factory.Faker("sentence")
 
     @factory.post_generation
     def items(self, create, extracted, **kwargs):
@@ -112,9 +112,9 @@ class OrderItemFactory(DjangoModelFactory):
 
     order = factory.SubFactory(OrderFactory)
     product = factory.SubFactory(ProductFactory)
-    quantity = factory.Faker('random_int', min=1, max=10)
+    quantity = factory.Faker("random_int", min=1, max=10)
     unit_price = factory.Faker(
-        'pydecimal',
+        "pydecimal",
         left_digits=3,
         right_digits=2,
         positive=True,
@@ -140,16 +140,16 @@ class OrderFactory(DjangoModelFactory):
         shipped = factory.Trait(
             status=Order.Status.SHIPPED,
             shipped_at=factory.LazyFunction(timezone.now),
-            tracking_number=factory.Faker('uuid4'),
+            tracking_number=factory.Faker("uuid4"),
         )
         cancelled = factory.Trait(
             status=Order.Status.CANCELLED,
-            cancellation_reason='Customer request',
+            cancellation_reason="Customer request",
         )
         with_items = factory.Trait(
             items=factory.RelatedFactoryList(
                 OrderItemFactory,
-                factory_related_name='order',
+                factory_related_name="order",
                 size=3,
             ),
         )
@@ -267,7 +267,7 @@ class TestCreateOrderUseCase:
 
         # Assert
         call_kwargs = mock_order_service.create.call_args.kwargs
-        assert call_kwargs['notes'] == "Please gift wrap"
+        assert call_kwargs["notes"] == "Please gift wrap"
 ```
 
 ### Testing Use Case with Database
@@ -294,7 +294,7 @@ class TestCreateOrderUseCaseIntegration:
                 OrderItemInput(
                     product_id=product.id,
                     quantity=2,
-                    unit_price=Decimal('10.00'),
+                    unit_price=Decimal("10.00"),
                 ),
             ],
         )
@@ -359,10 +359,12 @@ class TestOrderServiceQueries:
         pending_order = OrderFactory(customer=customer, status=Order.Status.PENDING)
         OrderFactory(customer=customer, status=Order.Status.SHIPPED)
 
-        result = list(OrderService.list_for_customer(
-            customer.id,
-            status=Order.Status.PENDING,
-        ))
+        result = list(
+            OrderService.list_for_customer(
+                customer.id,
+                status=Order.Status.PENDING,
+            )
+        )
 
         assert len(result) == 1
         assert result[0] == pending_order
@@ -387,7 +389,7 @@ class TestOrderServiceMutations:
                 OrderItemInput(
                     product_id=product.id,
                     quantity=2,
-                    unit_price=Decimal('10.00'),
+                    unit_price=Decimal("10.00"),
                 ),
             ],
         )
@@ -437,13 +439,16 @@ class TestOrderServiceValidations:
         assert is_valid is False
         assert "shipped" in error.lower()
 
-    @pytest.mark.parametrize("status,expected", [
-        (Order.Status.PENDING, True),
-        (Order.Status.CONFIRMED, True),
-        (Order.Status.SHIPPED, False),
-        (Order.Status.DELIVERED, False),
-        (Order.Status.CANCELLED, False),
-    ])
+    @pytest.mark.parametrize(
+        "status,expected",
+        [
+            (Order.Status.PENDING, True),
+            (Order.Status.CONFIRMED, True),
+            (Order.Status.SHIPPED, False),
+            (Order.Status.DELIVERED, False),
+            (Order.Status.CANCELLED, False),
+        ],
+    )
     def test_validate_can_cancel_by_status(self, status, expected):
         """Should validate based on status."""
         order = OrderFactory(status=status)
@@ -473,9 +478,11 @@ def api_client():
 @pytest.fixture
 def authenticated_client(api_client):
     """Return authenticated API client."""
+
     def _authenticated_client(user):
         api_client.force_authenticate(user=user)
         return api_client
+
     return _authenticated_client
 ```
 
@@ -504,23 +511,27 @@ class TestCreateOrderView:
         product = ProductFactory(stock=10)
         client = authenticated_client(user)
 
-        response = client.post('/api/orders/', {
-            'items': [
-                {'product_id': str(product.id), 'quantity': 2}
-            ],
-            'notes': 'Test order',
-        }, format='json')
+        response = client.post(
+            "/api/orders/",
+            {
+                "items": [{"product_id": str(product.id), "quantity": 2}],
+                "notes": "Test order",
+            },
+            format="json",
+        )
 
         assert response.status_code == status.HTTP_201_CREATED
-        assert 'order_id' in response.data
-        order = Order.objects.get(id=response.data['order_id'])
+        assert "order_id" in response.data
+        order = Order.objects.get(id=response.data["order_id"])
         assert order.customer == customer
 
     def test_create_order_requires_auth(self, api_client):
         """POST /api/orders/ should require authentication."""
-        response = api_client.post('/api/orders/', {
-            'items': [{'product_id': str(uuid4()), 'quantity': 1}]
-        }, format='json')
+        response = api_client.post(
+            "/api/orders/",
+            {"items": [{"product_id": str(uuid4()), "quantity": 1}]},
+            format="json",
+        )
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
@@ -530,9 +541,13 @@ class TestCreateOrderView:
         CustomerFactory(user=user)
         client = authenticated_client(user)
 
-        response = client.post('/api/orders/', {
-            'items': [],  # Empty items
-        }, format='json')
+        response = client.post(
+            "/api/orders/",
+            {
+                "items": [],  # Empty items
+            },
+            format="json",
+        )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
@@ -548,11 +563,11 @@ class TestOrderDetailView:
         order = OrderFactory(customer=customer, with_items=True)
         client = authenticated_client(user)
 
-        response = client.get(f'/api/orders/{order.id}/')
+        response = client.get(f"/api/orders/{order.id}/")
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.data['id'] == str(order.id)
-        assert 'items' in response.data
+        assert response.data["id"] == str(order.id)
+        assert "items" in response.data
 
     def test_cannot_access_other_customer_order(self, authenticated_client):
         """GET /api/orders/{id}/ should not return other's orders."""
@@ -561,7 +576,7 @@ class TestOrderDetailView:
         other_order = OrderFactory()  # Different customer
         client = authenticated_client(user)
 
-        response = client.get(f'/api/orders/{other_order.id}/')
+        response = client.get(f"/api/orders/{other_order.id}/")
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
@@ -577,7 +592,7 @@ class TestCancelOrderView:
         order = OrderFactory(customer=customer, status=Order.Status.PENDING)
         client = authenticated_client(user)
 
-        response = client.post(f'/api/orders/{order.id}/cancel/')
+        response = client.post(f"/api/orders/{order.id}/cancel/")
 
         assert response.status_code == status.HTTP_200_OK
         order.refresh_from_db()
@@ -590,10 +605,10 @@ class TestCancelOrderView:
         order = OrderFactory(customer=customer, status=Order.Status.SHIPPED)
         client = authenticated_client(user)
 
-        response = client.post(f'/api/orders/{order.id}/cancel/')
+        response = client.post(f"/api/orders/{order.id}/cancel/")
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert 'error' in response.data
+        assert "error" in response.data
 ```
 
 ## Testing Models
@@ -622,15 +637,15 @@ class TestOrderModel:
     def test_total_calculates_from_items(self):
         """Total should sum item subtotals."""
         order = OrderFactory()
-        OrderItemFactory(order=order, quantity=2, unit_price=Decimal('10.00'))
-        OrderItemFactory(order=order, quantity=1, unit_price=Decimal('5.00'))
+        OrderItemFactory(order=order, quantity=2, unit_price=Decimal("10.00"))
+        OrderItemFactory(order=order, quantity=1, unit_price=Decimal("5.00"))
 
-        assert order.total == Decimal('25.00')
+        assert order.total == Decimal("25.00")
 
     def test_total_returns_zero_for_empty_order(self):
         """Total should be zero when no items."""
         order = OrderFactory()
-        assert order.total == Decimal('0.00')
+        assert order.total == Decimal("0.00")
 
     def test_str_representation(self):
         """String should include order ID and customer."""
@@ -694,9 +709,11 @@ def api_client():
 @pytest.fixture
 def authenticated_client(api_client):
     """Factory for authenticated client."""
+
     def _make_authenticated(user):
         api_client.force_authenticate(user=user)
         return api_client
+
     return _make_authenticated
 
 
@@ -775,12 +792,15 @@ def test_create_order_creates_with_items():
 ### Use Parametrize for Multiple Scenarios
 
 ```python
-@pytest.mark.parametrize("status,expected_cancellable", [
-    (Order.Status.PENDING, True),
-    (Order.Status.CONFIRMED, True),
-    (Order.Status.SHIPPED, False),
-    (Order.Status.DELIVERED, False),
-])
+@pytest.mark.parametrize(
+    "status,expected_cancellable",
+    [
+        (Order.Status.PENDING, True),
+        (Order.Status.CONFIRMED, True),
+        (Order.Status.SHIPPED, False),
+        (Order.Status.DELIVERED, False),
+    ],
+)
 def test_is_cancellable_by_status(status, expected_cancellable):
     order = OrderFactory(status=status)
     assert order.is_cancellable is expected_cancellable

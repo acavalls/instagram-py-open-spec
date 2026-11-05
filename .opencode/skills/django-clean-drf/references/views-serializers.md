@@ -36,6 +36,7 @@ class CreateOrderView(APIView):
 
     POST /api/orders/
     """
+
     permission_classes = [IsAuthenticated]
 
     def post(self, request: Request) -> Response:
@@ -59,12 +60,12 @@ class CreateOrderView(APIView):
         # 4. Return response
         if not output.success:
             return Response(
-                {'error': output.error, 'code': output.error_code},
+                {"error": output.error, "code": output.error_code},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
         return Response(
-            {'order_id': str(output.order_id)},
+            {"order_id": str(output.order_id)},
             status=status.HTTP_201_CREATED,
         )
 ```
@@ -114,24 +115,24 @@ class OrderViewSet(viewsets.ModelViewSet):
     destroy: DELETE /api/orders/{id}/
     cancel: POST /api/orders/{id}/cancel/
     """
+
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         """Return orders for current user only."""
         return (
-            Order.objects
-            .filter(customer=self.request.user.customer)
-            .select_related('customer', 'shipping_address')
-            .prefetch_related('items__product')
+            Order.objects.filter(customer=self.request.user.customer)
+            .select_related("customer", "shipping_address")
+            .prefetch_related("items__product")
         )
 
     def get_serializer_class(self):
         """Use different serializers for different actions."""
-        if self.action == 'list':
+        if self.action == "list":
             return OrderListSerializer
-        if self.action == 'create':
+        if self.action == "create":
             return CreateOrderSerializer
-        if self.action in ('update', 'partial_update'):
+        if self.action in ("update", "partial_update"):
             return UpdateOrderSerializer
         return OrderReadSerializer  # retrieve, etc.
 
@@ -149,7 +150,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         )
 
         if not output.success:
-            return Response({'error': output.error}, status=400)
+            return Response({"error": output.error}, status=400)
 
         # Fetch created order for response
         order = OrderService.get_by_id(output.order_id)
@@ -158,16 +159,16 @@ class OrderViewSet(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED,
         )
 
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=["post"])
     def cancel(self, request, pk=None):
         """Cancel an order."""
         use_case = CancelOrderUseCase(order_service=OrderService())
         output = use_case.execute(CancelOrderInput(order_id=pk))
 
         if not output.success:
-            return Response({'error': output.error}, status=400)
+            return Response({"error": output.error}, status=400)
 
-        return Response({'status': 'cancelled'})
+        return Response({"status": "cancelled"})
 ```
 
 ## Separate Read and Write Serializers
@@ -188,6 +189,7 @@ from rest_framework import serializers
 
 class OrderItemInputSerializer(serializers.Serializer):
     """Input serializer for order items."""
+
     product_id = serializers.UUIDField()
     quantity = serializers.IntegerField(min_value=1, max_value=100)
 
@@ -198,27 +200,27 @@ class CreateOrderSerializer(serializers.Serializer):
 
     Does NOT use ModelSerializer - we validate input only.
     """
+
     items = OrderItemInputSerializer(many=True, min_length=1)
     notes = serializers.CharField(
         max_length=500,
         required=False,
         allow_blank=True,
-        default='',
+        default="",
     )
     shipping_address_id = serializers.UUIDField(required=False)
 
     def validate_items(self, value):
         """Validate items list."""
-        product_ids = [item['product_id'] for item in value]
+        product_ids = [item["product_id"] for item in value]
         if len(product_ids) != len(set(product_ids)):
-            raise serializers.ValidationError(
-                "Duplicate products not allowed"
-            )
+            raise serializers.ValidationError("Duplicate products not allowed")
         return value
 
 
 class UpdateOrderSerializer(serializers.Serializer):
     """Input serializer for updating orders."""
+
     notes = serializers.CharField(
         max_length=500,
         required=False,
@@ -237,8 +239,9 @@ from apps.orders.models import Order, OrderItem
 
 class OrderItemReadSerializer(serializers.ModelSerializer):
     """Output serializer for order items."""
+
     product_name = serializers.CharField(
-        source='product.name',
+        source="product.name",
         read_only=True,
     )
     subtotal = serializers.DecimalField(
@@ -250,25 +253,26 @@ class OrderItemReadSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrderItem
         fields = [
-            'id',
-            'product_id',
-            'product_name',
-            'quantity',
-            'unit_price',
-            'subtotal',
+            "id",
+            "product_id",
+            "product_name",
+            "quantity",
+            "unit_price",
+            "subtotal",
         ]
         read_only_fields = fields
 
 
 class OrderReadSerializer(serializers.ModelSerializer):
     """Output serializer for order detail."""
+
     customer_name = serializers.CharField(
-        source='customer.name',
+        source="customer.name",
         read_only=True,
     )
     items = OrderItemReadSerializer(many=True, read_only=True)
     status_display = serializers.CharField(
-        source='get_status_display',
+        source="get_status_display",
         read_only=True,
     )
     is_cancellable = serializers.BooleanField(read_only=True)
@@ -281,32 +285,33 @@ class OrderReadSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = [
-            'id',
-            'customer_name',
-            'status',
-            'status_display',
-            'items',
-            'total',
-            'is_cancellable',
-            'notes',
-            'tracking_number',
-            'created_at',
-            'updated_at',
+            "id",
+            "customer_name",
+            "status",
+            "status_display",
+            "items",
+            "total",
+            "is_cancellable",
+            "notes",
+            "tracking_number",
+            "created_at",
+            "updated_at",
         ]
         read_only_fields = fields
 
 
 class OrderListSerializer(serializers.ModelSerializer):
     """Output serializer for order list (minimal fields)."""
+
     items_count = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Order
         fields = [
-            'id',
-            'status',
-            'items_count',
-            'created_at',
+            "id",
+            "status",
+            "items_count",
+            "created_at",
         ]
         read_only_fields = fields
 ```
@@ -337,10 +342,10 @@ class CreateOrderSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         """Validate across multiple fields."""
-        if attrs['end_date'] <= attrs['start_date']:
-            raise serializers.ValidationError({
-                'end_date': "End date must be after start date"
-            })
+        if attrs["end_date"] <= attrs["start_date"]:
+            raise serializers.ValidationError(
+                {"end_date": "End date must be after start date"}
+            )
         return attrs
 ```
 
@@ -352,7 +357,7 @@ class CreateOrderSerializer(serializers.Serializer):
 
     def validate_items(self, value):
         """Validate with request context."""
-        request = self.context.get('request')
+        request = self.context.get("request")
         if not request:
             return value
 
@@ -394,6 +399,7 @@ class CreateOrderUseCase:
 ```python
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 
+
 class OrderViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 ```
@@ -416,7 +422,7 @@ class CanModifyOrder(BasePermission):
     """Check if order can be modified."""
 
     def has_object_permission(self, request, view, obj):
-        if request.method in ('PUT', 'PATCH', 'DELETE'):
+        if request.method in ("PUT", "PATCH", "DELETE"):
             return obj.is_editable
         return True
 ```
@@ -442,6 +448,7 @@ class PermissionRequiredMixin:
                 'destroy': ['orders.delete'],
             }
     """
+
     required_permissions: dict[str, list[str]] | None = None
 
     def check_permissions(self, request):
@@ -453,7 +460,7 @@ class PermissionRequiredMixin:
         user = request.user
 
         # Admin bypass
-        if hasattr(user, 'role') and user.role == 'ADMIN':
+        if hasattr(user, "role") and user.role == "ADMIN":
             return
 
         # Get permissions for this action
@@ -462,9 +469,7 @@ class PermissionRequiredMixin:
             return
 
         # Check if user has any required permission
-        has_perm = any(
-            user.has_perm(f"permissions.{p}") for p in perms
-        )
+        has_perm = any(user.has_perm(f"permissions.{p}") for p in perms)
 
         if not has_perm:
             raise PermissionDenied("Insufficient permissions")
@@ -477,7 +482,7 @@ class PermissionRequiredMixin:
 ```python
 # Create
 return Response(
-    {'order_id': str(order.id)},
+    {"order_id": str(order.id)},
     status=status.HTTP_201_CREATED,
 )
 
@@ -501,15 +506,15 @@ return Response(status=status.HTTP_204_NO_CONTENT)
 if not output.success:
     return Response(
         {
-            'error': output.error,
-            'code': output.error_code,
+            "error": output.error,
+            "code": output.error_code,
         },
         status=status.HTTP_400_BAD_REQUEST,
     )
 
 # Not found
 return Response(
-    {'error': 'Order not found'},
+    {"error": "Order not found"},
     status=status.HTTP_404_NOT_FOUND,
 )
 
@@ -544,12 +549,12 @@ class OrderViewSet(viewsets.ModelViewSet):
 from django.urls import path
 from apps.orders import views
 
-app_name = 'orders'
+app_name = "orders"
 
 urlpatterns = [
-    path('', views.OrderListCreateView.as_view(), name='order-list-create'),
-    path('<uuid:pk>/', views.OrderDetailView.as_view(), name='order-detail'),
-    path('<uuid:pk>/cancel/', views.CancelOrderView.as_view(), name='order-cancel'),
+    path("", views.OrderListCreateView.as_view(), name="order-list-create"),
+    path("<uuid:pk>/", views.OrderDetailView.as_view(), name="order-detail"),
+    path("<uuid:pk>/cancel/", views.CancelOrderView.as_view(), name="order-cancel"),
 ]
 ```
 
@@ -562,10 +567,10 @@ from rest_framework.routers import DefaultRouter
 from apps.orders import views
 
 router = DefaultRouter()
-router.register('', views.OrderViewSet, basename='order')
+router.register("", views.OrderViewSet, basename="order")
 
 urlpatterns = [
-    path('', include(router.urls)),
+    path("", include(router.urls)),
 ]
 ```
 
@@ -577,7 +582,7 @@ urlpatterns = [
 class CustomerReadSerializer(serializers.ModelSerializer):
     class Meta:
         model = Customer
-        fields = ['id', 'name', 'email']
+        fields = ["id", "name", "email"]
 
 
 class OrderDetailSerializer(serializers.ModelSerializer):
@@ -586,7 +591,7 @@ class OrderDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Order
-        fields = ['id', 'customer', 'items', 'status', 'total']
+        fields = ["id", "customer", "items", "status", "total"]
 ```
 
 ### Write with Nested Creation
@@ -594,6 +599,7 @@ class OrderDetailSerializer(serializers.ModelSerializer):
 ```python
 class CreateOrderWithItemsSerializer(serializers.Serializer):
     """Create order with nested items in one request."""
+
     items = OrderItemInputSerializer(many=True)
     notes = serializers.CharField(required=False)
 
@@ -612,7 +618,7 @@ class OrderReadSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Order
-        fields = ['id', 'status', 'total', 'can_cancel', 'user_reservation']
+        fields = ["id", "status", "total", "can_cancel", "user_reservation"]
 
     def get_total(self, obj: Order) -> str:
         """Calculate total from items."""
@@ -624,13 +630,13 @@ class OrderReadSerializer(serializers.ModelSerializer):
 
     def get_user_reservation(self, obj: Order) -> dict | None:
         """Get current user's reservation for this order."""
-        request = self.context.get('request')
+        request = self.context.get("request")
         if not request or not request.user.is_authenticated:
             return None
 
-        reservation = obj.reservations.filter(
-            user=request.user
-        ).values('id', 'status').first()
+        reservation = (
+            obj.reservations.filter(user=request.user).values("id", "status").first()
+        )
 
         return reservation
 ```
@@ -644,16 +650,17 @@ class OrderReadSerializer(serializers.ModelSerializer):
 class CreateOrderView(APIView):
     def post(self, request):
         # 50 lines of business logic
-        items = request.data['items']
+        items = request.data["items"]
         for item in items:
-            product = Product.objects.get(id=item['product_id'])
-            if product.stock < item['quantity']:
-                return Response({'error': 'Out of stock'}, status=400)
-            product.stock -= item['quantity']
+            product = Product.objects.get(id=item["product_id"])
+            if product.stock < item["quantity"]:
+                return Response({"error": "Out of stock"}, status=400)
+            product.stock -= item["quantity"]
             product.save()
 
         order = Order.objects.create(customer=request.user.customer)
         # ... more logic
+
 
 # GOOD: View delegates to use case
 class CreateOrderView(APIView):
@@ -665,8 +672,8 @@ class CreateOrderView(APIView):
         output = use_case.execute(CreateOrderInput(...))
 
         if not output.success:
-            return Response({'error': output.error}, status=400)
-        return Response({'order_id': str(output.order_id)}, status=201)
+            return Response({"error": output.error}, status=400)
+        return Response({"order_id": str(output.order_id)}, status=201)
 ```
 
 ### Direct ORM in Views
@@ -675,15 +682,16 @@ class CreateOrderView(APIView):
 # BAD: View queries database directly
 class OrderDetailView(APIView):
     def get(self, request, pk):
-        order = Order.objects.select_related('customer').get(pk=pk)
+        order = Order.objects.select_related("customer").get(pk=pk)
         return Response(OrderSerializer(order).data)
+
 
 # GOOD: Use service for queries
 class OrderDetailView(APIView):
     def get(self, request, pk):
         order = OrderService.get_by_id(pk)
         if not order:
-            return Response({'error': 'Not found'}, status=404)
+            return Response({"error": "Not found"}, status=404)
         return Response(OrderReadSerializer(order).data)
 ```
 
@@ -694,20 +702,20 @@ class OrderDetailView(APIView):
 class OrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
-        fields = '__all__'
+        fields = "__all__"
+
 
 # GOOD: Separate by purpose
-class OrderReadSerializer(serializers.ModelSerializer):
-    ...
+class OrderReadSerializer(serializers.ModelSerializer): ...
 
-class OrderListSerializer(serializers.ModelSerializer):
-    ...
 
-class CreateOrderSerializer(serializers.Serializer):
-    ...
+class OrderListSerializer(serializers.ModelSerializer): ...
 
-class UpdateOrderSerializer(serializers.Serializer):
-    ...
+
+class CreateOrderSerializer(serializers.Serializer): ...
+
+
+class UpdateOrderSerializer(serializers.Serializer): ...
 ```
 
 ### Business Logic in Serializers
@@ -719,10 +727,11 @@ class CreateOrderSerializer(serializers.Serializer):
 
     def validate_items(self, value):
         for item in value:
-            product = Product.objects.get(id=item['product_id'])
-            if product.stock < item['quantity']:
+            product = Product.objects.get(id=item["product_id"])
+            if product.stock < item["quantity"]:
                 raise ValidationError("Out of stock")  # Business logic!
         return value
+
 
 # GOOD: Serializer validates format only
 class CreateOrderSerializer(serializers.Serializer):
@@ -733,6 +742,7 @@ class CreateOrderSerializer(serializers.Serializer):
         if len(value) > 50:
             raise ValidationError("Maximum 50 items")
         return value
+
 
 # Business logic in use case
 class CreateOrderUseCase:

@@ -55,6 +55,7 @@ The snippet below demonstrates the core MUST DO constraints: indexed fields, `se
 # models.py
 from django.db import models
 
+
 class Article(models.Model):
     title = models.CharField(max_length=255, db_index=True)
     author = models.ForeignKey(
@@ -69,9 +70,11 @@ class Article(models.Model):
     def __str__(self):
         return self.title
 
+
 # serializers.py
 from rest_framework import serializers
 from .models import Article
+
 
 class ArticleSerializer(serializers.ModelSerializer):
     author_username = serializers.CharField(source="author.username", read_only=True)
@@ -85,16 +88,19 @@ class ArticleSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Title must be at least 3 characters.")
         return value.strip()
 
+
 # views.py
 from rest_framework import viewsets, permissions
 from .models import Article
 from .serializers import ArticleSerializer
+
 
 class ArticleViewSet(viewsets.ModelViewSet):
     """
     Uses select_related to avoid N+1 on author lookups.
     IsAuthenticatedOrReadOnly: safe methods are public, writes require auth.
     """
+
     serializer_class = ArticleSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
@@ -110,6 +116,7 @@ class ArticleViewSet(viewsets.ModelViewSet):
 from rest_framework.test import APITestCase
 from rest_framework import status
 from django.contrib.auth.models import User
+
 
 class ArticleAPITest(APITestCase):
     def setUp(self):

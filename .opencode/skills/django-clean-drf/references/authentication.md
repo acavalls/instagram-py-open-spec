@@ -56,9 +56,9 @@ from rest_framework_simplejwt.views import (
 )
 
 urlpatterns = [
-    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
-    path('api/token/verify/', TokenVerifyView.as_view(), name='token_verify'),
+    path("api/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
+    path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
+    path("api/token/verify/", TokenVerifyView.as_view(), name="token_verify"),
 ]
 ```
 
@@ -68,15 +68,16 @@ urlpatterns = [
 # apps/users/serializers.py
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
+
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
 
         # Add custom claims
-        token['email'] = user.email
-        token['role'] = user.role
-        token['permissions'] = list(user.get_all_permissions())
+        token["email"] = user.email
+        token["role"] = user.role
+        token["permissions"] = list(user.get_all_permissions())
 
         return token
 ```
@@ -84,6 +85,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 ```python
 # apps/users/views.py
 from rest_framework_simplejwt.views import TokenObtainPairView
+
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
@@ -107,12 +109,13 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 
+
 class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
         try:
-            refresh_token = request.data['refresh']
+            refresh_token = request.data["refresh"]
             token = RefreshToken(refresh_token)
             token.blacklist()
             return Response(status=status.HTTP_205_RESET_CONTENT)
@@ -151,9 +154,9 @@ print(token.key)  # Use this in Authorization header
 ```python
 # settings.py
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.SessionAuthentication',
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.SessionAuthentication",
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
     ],
 }
 ```
@@ -163,9 +166,9 @@ REST_FRAMEWORK = {
 ```python
 # settings.py
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework_simplejwt.authentication.JWTAuthentication',  # API clients
-        'rest_framework.authentication.SessionAuthentication',         # Web/Admin
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework_simplejwt.authentication.JWTAuthentication",  # API clients
+        "rest_framework.authentication.SessionAuthentication",  # Web/Admin
     ],
 }
 ```
@@ -182,6 +185,7 @@ from rest_framework.permissions import (
     IsAuthenticatedOrReadOnly,
 )
 
+
 class OrderViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 ```
@@ -191,11 +195,11 @@ class OrderViewSet(viewsets.ModelViewSet):
 ```python
 class OrderViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
-        if self.action == 'list':
+        if self.action == "list":
             return [IsAuthenticated()]
-        elif self.action == 'create':
+        elif self.action == "create":
             return [IsAuthenticated()]
-        elif self.action in ['update', 'partial_update', 'destroy']:
+        elif self.action in ["update", "partial_update", "destroy"]:
             return [IsAuthenticated(), IsOrderOwner()]
         return [IsAuthenticated()]
 ```
@@ -206,11 +210,13 @@ class OrderViewSet(viewsets.ModelViewSet):
 # apps/core/permissions.py
 from rest_framework.permissions import BasePermission
 
+
 class IsOrderOwner(BasePermission):
     """
     Only allow owners to access their orders.
     """
-    message = 'You do not have permission to access this order.'
+
+    message = "You do not have permission to access this order."
 
     def has_object_permission(self, request, view, obj):
         return obj.customer.user == request.user
@@ -220,8 +226,9 @@ class IsAdminOrReadOnly(BasePermission):
     """
     Allow read-only for everyone, write only for admins.
     """
+
     def has_permission(self, request, view):
-        if request.method in ('GET', 'HEAD', 'OPTIONS'):
+        if request.method in ("GET", "HEAD", "OPTIONS"):
             return True
         return request.user and request.user.is_staff
 
@@ -230,8 +237,9 @@ class HasAPIKey(BasePermission):
     """
     Check for API key in header.
     """
+
     def has_permission(self, request, view):
-        api_key = request.headers.get('X-API-Key')
+        api_key = request.headers.get("X-API-Key")
         if not api_key:
             return False
         return APIKey.objects.filter(key=api_key, is_active=True).exists()
@@ -243,9 +251,9 @@ class HasAPIKey(BasePermission):
 # apps/users/models.py
 class User(AbstractUser):
     class Role(models.TextChoices):
-        ADMIN = 'admin', 'Admin'
-        MANAGER = 'manager', 'Manager'
-        CUSTOMER = 'customer', 'Customer'
+        ADMIN = "admin", "Admin"
+        MANAGER = "manager", "Manager"
+        CUSTOMER = "customer", "Customer"
 
     role = models.CharField(max_length=20, choices=Role.choices, default=Role.CUSTOMER)
 ```
@@ -254,10 +262,10 @@ class User(AbstractUser):
 # apps/core/permissions.py
 class IsManager(BasePermission):
     def has_permission(self, request, view):
-        return (
-            request.user.is_authenticated and
-            request.user.role in [User.Role.ADMIN, User.Role.MANAGER]
-        )
+        return request.user.is_authenticated and request.user.role in [
+            User.Role.ADMIN,
+            User.Role.MANAGER,
+        ]
 
 
 class HasRole(BasePermission):
@@ -265,14 +273,12 @@ class HasRole(BasePermission):
     Usage: permission_classes = [HasRole]
     Then set required_roles on the view.
     """
+
     def has_permission(self, request, view):
-        required_roles = getattr(view, 'required_roles', [])
+        required_roles = getattr(view, "required_roles", [])
         if not required_roles:
             return True
-        return (
-            request.user.is_authenticated and
-            request.user.role in required_roles
-        )
+        return request.user.is_authenticated and request.user.role in required_roles
 ```
 
 ```python
@@ -285,6 +291,7 @@ class OrderManagementViewSet(viewsets.ModelViewSet):
 
 ```python
 from rest_framework.permissions import DjangoModelPermissions
+
 
 class OrderViewSet(viewsets.ModelViewSet):
     permission_classes = [DjangoModelPermissions]
@@ -310,11 +317,11 @@ class IsOwnerOrAdmin(BasePermission):
             return True
 
         # Check ownership (customize based on your model)
-        if hasattr(obj, 'user'):
+        if hasattr(obj, "user"):
             return obj.user == request.user
-        if hasattr(obj, 'customer'):
+        if hasattr(obj, "customer"):
             return obj.customer.user == request.user
-        if hasattr(obj, 'owner'):
+        if hasattr(obj, "owner"):
             return obj.owner == request.user
 
         return False
@@ -334,15 +341,17 @@ class CreateOrderView(APIView):
         serializer.is_valid(raise_exception=True)
 
         use_case = CreateOrderUseCase()
-        output = use_case.execute(CreateOrderInput(
-            customer_id=request.user.customer.id,  # From authenticated user
-            **serializer.validated_data,
-        ))
+        output = use_case.execute(
+            CreateOrderInput(
+                customer_id=request.user.customer.id,  # From authenticated user
+                **serializer.validated_data,
+            )
+        )
 
         if not output.success:
-            return Response({'error': output.error}, status=400)
+            return Response({"error": output.error}, status=400)
 
-        return Response({'order_id': str(output.order_id)}, status=201)
+        return Response({"order_id": str(output.order_id)}, status=201)
 ```
 
 ### User Context in DTOs
@@ -360,11 +369,13 @@ class CreateOrderInput:
 class CreateOrderView(APIView):
     def post(self, request):
         use_case = CreateOrderUseCase()
-        output = use_case.execute(CreateOrderInput(
-            customer_id=request.user.customer.id,
-            items=serializer.validated_data['items'],
-            created_by_user_id=request.user.id,
-        ))
+        output = use_case.execute(
+            CreateOrderInput(
+                customer_id=request.user.customer.id,
+                items=serializer.validated_data["items"],
+                created_by_user_id=request.user.id,
+            )
+        )
 ```
 
 ### Permission Validation in Use Cases
@@ -377,11 +388,13 @@ class CancelOrderInput:
     requesting_user_id: UUID
     reason: str = ""
 
+
 @dataclass(frozen=True, slots=True)
 class CancelOrderOutput:
     success: bool
     error: str = ""
     error_code: str = ""
+
 
 class CancelOrderUseCase:
     def __init__(
@@ -448,7 +461,7 @@ class PermissionService:
             return False, "Cannot cancel orders outside your region"
 
         # Customers can only cancel their own orders
-        if hasattr(user, 'customer') and order.customer_id == user.customer.id:
+        if hasattr(user, "customer") and order.customer_id == user.customer.id:
             return True, ""
 
         return False, "You can only cancel your own orders"
@@ -462,10 +475,11 @@ class PermissionService:
 # apps/core/models.py
 import secrets
 
+
 class APIKey(models.Model):
     name = models.CharField(max_length=100)
     key = models.CharField(max_length=64, unique=True, db_index=True)
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='api_keys')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="api_keys")
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     last_used_at = models.DateTimeField(null=True, blank=True)
@@ -492,25 +506,26 @@ class APIKey(models.Model):
 from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 
+
 class APIKeyAuthentication(BaseAuthentication):
-    keyword = 'Api-Key'
+    keyword = "Api-Key"
 
     def authenticate(self, request):
-        api_key = request.headers.get('X-API-Key')
+        api_key = request.headers.get("X-API-Key")
         if not api_key:
             return None  # Try other auth methods
 
         try:
-            key = APIKey.objects.select_related('user').get(key=api_key)
+            key = APIKey.objects.select_related("user").get(key=api_key)
         except APIKey.DoesNotExist:
-            raise AuthenticationFailed('Invalid API key')
+            raise AuthenticationFailed("Invalid API key")
 
         if not key.is_valid:
-            raise AuthenticationFailed('API key expired or inactive')
+            raise AuthenticationFailed("API key expired or inactive")
 
         # Update last used
         key.last_used_at = timezone.now()
-        key.save(update_fields=['last_used_at'])
+        key.save(update_fields=["last_used_at"])
 
         return (key.user, key)
 
@@ -521,9 +536,9 @@ class APIKeyAuthentication(BaseAuthentication):
 ```python
 # settings.py
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        'apps.core.authentication.APIKeyAuthentication',
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "apps.core.authentication.APIKeyAuthentication",
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
     ],
 }
 ```
@@ -536,11 +551,11 @@ REST_FRAMEWORK = {
 # apps/core/models.py
 class APIKey(models.Model):
     SCOPE_CHOICES = [
-        ('read:orders', 'Read Orders'),
-        ('write:orders', 'Write Orders'),
-        ('read:products', 'Read Products'),
-        ('write:products', 'Write Products'),
-        ('admin', 'Admin Access'),
+        ("read:orders", "Read Orders"),
+        ("write:orders", "Write Orders"),
+        ("read:products", "Read Products"),
+        ("write:products", "Write Products"),
+        ("admin", "Admin Access"),
     ]
 
     scopes = models.JSONField(default=list)  # ['read:orders', 'write:orders']
@@ -557,16 +572,17 @@ class HasScope(BasePermission):
             permission_classes = [HasScope]
             required_scopes = ['read:orders']
     """
+
     def has_permission(self, request, view):
-        required_scopes = getattr(view, 'required_scopes', [])
+        required_scopes = getattr(view, "required_scopes", [])
         if not required_scopes:
             return True
 
         # Get API key from authentication
-        if hasattr(request, 'auth') and isinstance(request.auth, APIKey):
+        if hasattr(request, "auth") and isinstance(request.auth, APIKey):
             api_key = request.auth
             # Admin scope grants all access
-            if 'admin' in api_key.scopes:
+            if "admin" in api_key.scopes:
                 return True
             # Check required scopes
             return all(scope in api_key.scopes for scope in required_scopes)
@@ -580,9 +596,9 @@ class OrderViewSet(viewsets.ModelViewSet):
     permission_classes = [HasScope]
 
     def get_required_scopes(self):
-        if self.action in ['list', 'retrieve']:
-            return ['read:orders']
-        return ['write:orders']
+        if self.action in ["list", "retrieve"]:
+            return ["read:orders"]
+        return ["write:orders"]
 
     required_scopes = property(get_required_scopes)
 ```
@@ -595,17 +611,17 @@ class OrderViewSet(viewsets.ModelViewSet):
 # settings.py
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-        'OPTIONS': {'min_length': 12},
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+        "OPTIONS": {"min_length": 12},
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
 ```
@@ -616,15 +632,16 @@ AUTH_PASSWORD_VALIDATORS = [
 # apps/core/throttling.py
 from rest_framework.throttling import AnonRateThrottle
 
+
 class AuthRateThrottle(AnonRateThrottle):
-    scope = 'auth'
+    scope = "auth"
 ```
 
 ```python
 # settings.py
 REST_FRAMEWORK = {
-    'DEFAULT_THROTTLE_RATES': {
-        'auth': '5/minute',  # Prevent brute force
+    "DEFAULT_THROTTLE_RATES": {
+        "auth": "5/minute",  # Prevent brute force
     },
 }
 ```
@@ -633,11 +650,13 @@ REST_FRAMEWORK = {
 # urls.py
 from rest_framework_simplejwt.views import TokenObtainPairView
 
+
 class ThrottledTokenObtainPairView(TokenObtainPairView):
     throttle_classes = [AuthRateThrottle]
 
+
 urlpatterns = [
-    path('api/token/', ThrottledTokenObtainPairView.as_view()),
+    path("api/token/", ThrottledTokenObtainPairView.as_view()),
 ]
 ```
 
@@ -686,7 +705,7 @@ CORS_ALLOW_HEADERS = [
 
 # HTTPS settings
 SECURE_SSL_REDIRECT = True
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # Cookie security
 SESSION_COOKIE_SECURE = True
@@ -696,7 +715,7 @@ SESSION_COOKIE_HTTPONLY = True
 # Security headers
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_BROWSER_XSS_FILTER = True
-X_FRAME_OPTIONS = 'DENY'
+X_FRAME_OPTIONS = "DENY"
 
 # HSTS
 SECURE_HSTS_SECONDS = 31536000  # 1 year

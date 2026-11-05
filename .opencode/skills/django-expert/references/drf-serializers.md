@@ -5,15 +5,14 @@
 ```python
 from rest_framework import serializers
 
+
 class ProductSerializer(serializers.ModelSerializer):
     # Read-only computed field
-    category_name = serializers.CharField(source='category.name', read_only=True)
+    category_name = serializers.CharField(source="category.name", read_only=True)
 
     # Write-only for input
     category_id = serializers.PrimaryKeyRelatedField(
-        queryset=Category.objects.all(),
-        source='category',
-        write_only=True
+        queryset=Category.objects.all(), source="category", write_only=True
     )
 
     # Nested read-only
@@ -22,10 +21,18 @@ class ProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = [
-            'id', 'name', 'slug', 'description', 'price', 'stock',
-            'category_name', 'category_id', 'created_by', 'created_at'
+            "id",
+            "name",
+            "slug",
+            "description",
+            "price",
+            "stock",
+            "category_name",
+            "category_id",
+            "created_by",
+            "created_at",
         ]
-        read_only_fields = ['slug', 'created_at']
+        read_only_fields = ["slug", "created_at"]
 ```
 
 ## Field-Level Validation
@@ -34,7 +41,7 @@ class ProductSerializer(serializers.ModelSerializer):
 class ProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
-        fields = ['name', 'price', 'stock']
+        fields = ["name", "price", "stock"]
 
     def validate_price(self, value):
         if value < 0:
@@ -53,18 +60,18 @@ class ProductSerializer(serializers.ModelSerializer):
 class OrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
-        fields = ['product', 'quantity', 'shipping_address']
+        fields = ["product", "quantity", "shipping_address"]
 
     def validate(self, attrs):
-        product = attrs['product']
-        quantity = attrs['quantity']
+        product = attrs["product"]
+        quantity = attrs["quantity"]
 
         if quantity > product.stock:
-            raise serializers.ValidationError({
-                'quantity': f'Only {product.stock} items available'
-            })
+            raise serializers.ValidationError(
+                {"quantity": f"Only {product.stock} items available"}
+            )
 
-        if not attrs.get('shipping_address') and quantity > 5:
+        if not attrs.get("shipping_address") and quantity > 5:
             raise serializers.ValidationError(
                 "Shipping address required for large orders"
             )
@@ -78,17 +85,18 @@ class OrderSerializer(serializers.ModelSerializer):
 class OrderItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrderItem
-        fields = ['product', 'quantity', 'price']
+        fields = ["product", "quantity", "price"]
+
 
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True)
 
     class Meta:
         model = Order
-        fields = ['id', 'user', 'items', 'total', 'created_at']
+        fields = ["id", "user", "items", "total", "created_at"]
 
     def create(self, validated_data):
-        items_data = validated_data.pop('items')
+        items_data = validated_data.pop("items")
         order = Order.objects.create(**validated_data)
 
         for item_data in items_data:
@@ -97,7 +105,7 @@ class OrderSerializer(serializers.ModelSerializer):
         return order
 
     def update(self, instance, validated_data):
-        items_data = validated_data.pop('items', None)
+        items_data = validated_data.pop("items", None)
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
@@ -120,10 +128,10 @@ class ProductSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Product
-        fields = ['name', 'price', 'discount_price', 'is_available']
+        fields = ["name", "price", "discount_price", "is_available"]
 
     def get_discount_price(self, obj) -> float:
-        discount = self.context.get('discount', 0)
+        discount = self.context.get("discount", 0)
         return obj.price * (1 - discount / 100)
 
     def get_is_available(self, obj) -> bool:

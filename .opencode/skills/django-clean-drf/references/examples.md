@@ -47,18 +47,18 @@ class Order(models.Model):
     """Order entity."""
 
     class Status(models.TextChoices):
-        PENDING = 'pending', 'Pending'
-        CONFIRMED = 'confirmed', 'Confirmed'
-        PROCESSING = 'processing', 'Processing'
-        SHIPPED = 'shipped', 'Shipped'
-        DELIVERED = 'delivered', 'Delivered'
-        CANCELLED = 'cancelled', 'Cancelled'
+        PENDING = "pending", "Pending"
+        CONFIRMED = "confirmed", "Confirmed"
+        PROCESSING = "processing", "Processing"
+        SHIPPED = "shipped", "Shipped"
+        DELIVERED = "delivered", "Delivered"
+        CANCELLED = "cancelled", "Cancelled"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     customer = models.ForeignKey(
-        'customers.Customer',
+        "customers.Customer",
         on_delete=models.PROTECT,
-        related_name='orders',
+        related_name="orders",
     )
     status = models.CharField(
         max_length=20,
@@ -66,25 +66,25 @@ class Order(models.Model):
         default=Status.PENDING,
         db_index=True,
     )
-    notes = models.TextField(blank=True, default='')
+    notes = models.TextField(blank=True, default="")
     shipping_address = models.ForeignKey(
-        'addresses.Address',
+        "addresses.Address",
         on_delete=models.SET_NULL,
-        related_name='shipping_orders',
+        related_name="shipping_orders",
         null=True,
         blank=True,
     )
-    tracking_number = models.CharField(max_length=100, blank=True, default='')
+    tracking_number = models.CharField(max_length=100, blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     confirmed_at = models.DateTimeField(null=True, blank=True)
     shipped_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
-        ordering = ['-created_at']
+        ordering = ["-created_at"]
         indexes = [
-            models.Index(fields=['customer', 'status']),
-            models.Index(fields=['status', 'created_at']),
+            models.Index(fields=["customer", "status"]),
+            models.Index(fields=["status", "created_at"]),
         ]
 
     def __str__(self) -> str:
@@ -100,7 +100,7 @@ class Order(models.Model):
 
     @property
     def total(self) -> Decimal:
-        return sum(item.subtotal for item in self.items.all()) or Decimal('0.00')
+        return sum(item.subtotal for item in self.items.all()) or Decimal("0.00")
 
     @property
     def items_count(self) -> int:
@@ -111,18 +111,18 @@ class OrderItem(models.Model):
     """Order line item."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items')
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="items")
     product = models.ForeignKey(
-        'products.Product',
+        "products.Product",
         on_delete=models.PROTECT,
-        related_name='order_items',
+        related_name="order_items",
     )
     quantity = models.PositiveIntegerField(default=1)
     unit_price = models.DecimalField(max_digits=10, decimal_places=2)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ['order', 'product']
+        unique_together = ["order", "product"]
 
     @property
     def subtotal(self) -> Decimal:
@@ -149,9 +149,8 @@ class OrderService:
     @staticmethod
     def get_by_id(order_id: UUID) -> Order | None:
         return (
-            Order.objects
-            .select_related('customer', 'shipping_address')
-            .prefetch_related('items__product')
+            Order.objects.select_related("customer", "shipping_address")
+            .prefetch_related("items__product")
             .filter(id=order_id)
             .first()
         )
@@ -164,15 +163,14 @@ class OrderService:
         offset: int = 0,
     ) -> QuerySet[Order]:
         qs = (
-            Order.objects
-            .filter(customer_id=customer_id)
-            .select_related('customer')
-            .prefetch_related('items')
-            .order_by('-created_at')
+            Order.objects.filter(customer_id=customer_id)
+            .select_related("customer")
+            .prefetch_related("items")
+            .order_by("-created_at")
         )
         if status:
             qs = qs.filter(status=status)
-        return qs[offset:offset + limit]
+        return qs[offset : offset + limit]
 
     @staticmethod
     def count_for_customer(customer_id: UUID) -> int:
@@ -183,8 +181,8 @@ class OrderService:
     def create(
         self,
         customer_id: UUID,
-        items: list['OrderItemInput'],
-        notes: str = '',
+        items: list["OrderItemInput"],
+        notes: str = "",
         shipping_address_id: UUID | None = None,
     ) -> Order:
         order = Order.objects.create(
@@ -207,26 +205,26 @@ class OrderService:
         notes: str | None = None,
         shipping_address_id: UUID | None = None,
     ) -> Order:
-        update_fields = ['updated_at']
+        update_fields = ["updated_at"]
         if notes is not None:
             order.notes = notes
-            update_fields.append('notes')
+            update_fields.append("notes")
         if shipping_address_id is not None:
             order.shipping_address_id = shipping_address_id
-            update_fields.append('shipping_address_id')
+            update_fields.append("shipping_address_id")
         order.save(update_fields=update_fields)
         return order
 
     def confirm(self, order: Order) -> Order:
         order.status = Order.Status.CONFIRMED
         order.confirmed_at = timezone.now()
-        order.save(update_fields=['status', 'confirmed_at', 'updated_at'])
+        order.save(update_fields=["status", "confirmed_at", "updated_at"])
         return order
 
-    def cancel(self, order: Order, reason: str = '') -> Order:
+    def cancel(self, order: Order, reason: str = "") -> Order:
         order.status = Order.Status.CANCELLED
         order.notes = f"{order.notes}\nCancellation: {reason}".strip()
-        order.save(update_fields=['status', 'notes', 'updated_at'])
+        order.save(update_fields=["status", "notes", "updated_at"])
         return order
 
     # ============ VALIDATIONS ============
@@ -274,7 +272,7 @@ class OrderItemInput:
 class CreateOrderInput:
     customer_id: UUID
     items: list[OrderItemInput]
-    notes: str = ''
+    notes: str = ""
     shipping_address_id: UUID | None = None
 
 
@@ -309,7 +307,7 @@ class CreateOrderUseCase:
                 return CreateOrderOutput(
                     success=False,
                     error=error,
-                    error_code='INVENTORY_UNAVAILABLE',
+                    error_code="INVENTORY_UNAVAILABLE",
                 )
 
         # Create order
@@ -433,7 +431,7 @@ from apps.inventory.services import InventoryService
 class CancelOrderInput:
     order_id: UUID
     customer_id: UUID
-    reason: str = ''
+    reason: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -487,6 +485,7 @@ from apps.orders.models import Order, OrderItem
 
 # ============ WRITE SERIALIZERS ============
 
+
 class OrderItemInputSerializer(serializers.Serializer):
     product_id = serializers.UUIDField()
     quantity = serializers.IntegerField(min_value=1, max_value=100)
@@ -494,11 +493,11 @@ class OrderItemInputSerializer(serializers.Serializer):
 
 class CreateOrderSerializer(serializers.Serializer):
     items = OrderItemInputSerializer(many=True, min_length=1)
-    notes = serializers.CharField(max_length=500, required=False, default='')
+    notes = serializers.CharField(max_length=500, required=False, default="")
     shipping_address_id = serializers.UUIDField(required=False, allow_null=True)
 
     def validate_items(self, value):
-        product_ids = [item['product_id'] for item in value]
+        product_ids = [item["product_id"] for item in value]
         if len(product_ids) != len(set(product_ids)):
             raise serializers.ValidationError("Duplicate products not allowed")
         return value
@@ -510,13 +509,14 @@ class UpdateOrderSerializer(serializers.Serializer):
 
 
 class CancelOrderSerializer(serializers.Serializer):
-    reason = serializers.CharField(max_length=500, required=False, default='')
+    reason = serializers.CharField(max_length=500, required=False, default="")
 
 
 # ============ READ SERIALIZERS ============
 
+
 class OrderItemReadSerializer(serializers.ModelSerializer):
-    product_name = serializers.CharField(source='product.name', read_only=True)
+    product_name = serializers.CharField(source="product.name", read_only=True)
     subtotal = serializers.DecimalField(
         max_digits=12,
         decimal_places=2,
@@ -526,20 +526,20 @@ class OrderItemReadSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrderItem
         fields = [
-            'id',
-            'product_id',
-            'product_name',
-            'quantity',
-            'unit_price',
-            'subtotal',
+            "id",
+            "product_id",
+            "product_name",
+            "quantity",
+            "unit_price",
+            "subtotal",
         ]
         read_only_fields = fields
 
 
 class OrderReadSerializer(serializers.ModelSerializer):
-    customer_name = serializers.CharField(source='customer.name', read_only=True)
+    customer_name = serializers.CharField(source="customer.name", read_only=True)
     items = OrderItemReadSerializer(many=True, read_only=True)
-    status_display = serializers.CharField(source='get_status_display', read_only=True)
+    status_display = serializers.CharField(source="get_status_display", read_only=True)
     total = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
     is_cancellable = serializers.BooleanField(read_only=True)
     is_editable = serializers.BooleanField(read_only=True)
@@ -547,17 +547,17 @@ class OrderReadSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = [
-            'id',
-            'customer_name',
-            'status',
-            'status_display',
-            'items',
-            'total',
-            'notes',
-            'is_cancellable',
-            'is_editable',
-            'created_at',
-            'updated_at',
+            "id",
+            "customer_name",
+            "status",
+            "status_display",
+            "items",
+            "total",
+            "notes",
+            "is_cancellable",
+            "is_editable",
+            "created_at",
+            "updated_at",
         ]
         read_only_fields = fields
 
@@ -568,7 +568,7 @@ class OrderListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Order
-        fields = ['id', 'status', 'items_count', 'total', 'created_at']
+        fields = ["id", "status", "items_count", "total", "created_at"]
         read_only_fields = fields
 ```
 
@@ -615,27 +615,29 @@ class OrderListCreateView(APIView):
         output = use_case.execute(
             ListOrdersInput(
                 customer_id=request.user.customer.id,
-                status=request.query_params.get('status'),
-                page=int(request.query_params.get('page', 1)),
-                page_size=int(request.query_params.get('page_size', 20)),
+                status=request.query_params.get("status"),
+                page=int(request.query_params.get("page", 1)),
+                page_size=int(request.query_params.get("page_size", 20)),
             )
         )
 
-        return Response({
-            'orders': [
-                {
-                    'id': str(o.id),
-                    'status': o.status,
-                    'items_count': o.items_count,
-                    'total': str(o.total),
-                    'created_at': o.created_at.isoformat(),
-                }
-                for o in output.orders
-            ],
-            'total_count': output.total_count,
-            'page': output.page,
-            'page_size': output.page_size,
-        })
+        return Response(
+            {
+                "orders": [
+                    {
+                        "id": str(o.id),
+                        "status": o.status,
+                        "items_count": o.items_count,
+                        "total": str(o.total),
+                        "created_at": o.created_at.isoformat(),
+                    }
+                    for o in output.orders
+                ],
+                "total_count": output.total_count,
+                "page": output.page,
+                "page_size": output.page_size,
+            }
+        )
 
     def post(self, request: Request) -> Response:
         """Create a new order."""
@@ -645,17 +647,17 @@ class OrderListCreateView(APIView):
         # Get product prices
         product_service = ProductService()
         items_with_prices = []
-        for item_data in serializer.validated_data['items']:
-            product = product_service.get_by_id(item_data['product_id'])
+        for item_data in serializer.validated_data["items"]:
+            product = product_service.get_by_id(item_data["product_id"])
             if not product:
                 return Response(
-                    {'error': f"Product {item_data['product_id']} not found"},
+                    {"error": f"Product {item_data['product_id']} not found"},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             items_with_prices.append(
                 OrderItemInput(
-                    product_id=item_data['product_id'],
-                    quantity=item_data['quantity'],
+                    product_id=item_data["product_id"],
+                    quantity=item_data["quantity"],
                     unit_price=product.price,
                 )
             )
@@ -665,14 +667,16 @@ class OrderListCreateView(APIView):
             CreateOrderInput(
                 customer_id=request.user.customer.id,
                 items=items_with_prices,
-                notes=serializer.validated_data.get('notes', ''),
-                shipping_address_id=serializer.validated_data.get('shipping_address_id'),
+                notes=serializer.validated_data.get("notes", ""),
+                shipping_address_id=serializer.validated_data.get(
+                    "shipping_address_id"
+                ),
             )
         )
 
         if not output.success:
             return Response(
-                {'error': output.error, 'code': output.error_code},
+                {"error": output.error, "code": output.error_code},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -698,32 +702,34 @@ class OrderDetailView(APIView):
 
         if not output.success:
             return Response(
-                {'error': output.error},
+                {"error": output.error},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        return Response({
-            'id': str(output.order.id),
-            'status': output.order.status,
-            'status_display': output.order.status_display,
-            'notes': output.order.notes,
-            'items': [
-                {
-                    'id': str(item.id),
-                    'product_id': str(item.product_id),
-                    'product_name': item.product_name,
-                    'quantity': item.quantity,
-                    'unit_price': str(item.unit_price),
-                    'subtotal': str(item.subtotal),
-                }
-                for item in output.order.items
-            ],
-            'total': str(output.order.total),
-            'is_cancellable': output.order.is_cancellable,
-            'is_editable': output.order.is_editable,
-            'created_at': output.order.created_at.isoformat(),
-            'updated_at': output.order.updated_at.isoformat(),
-        })
+        return Response(
+            {
+                "id": str(output.order.id),
+                "status": output.order.status,
+                "status_display": output.order.status_display,
+                "notes": output.order.notes,
+                "items": [
+                    {
+                        "id": str(item.id),
+                        "product_id": str(item.product_id),
+                        "product_name": item.product_name,
+                        "quantity": item.quantity,
+                        "unit_price": str(item.unit_price),
+                        "subtotal": str(item.subtotal),
+                    }
+                    for item in output.order.items
+                ],
+                "total": str(output.order.total),
+                "is_cancellable": output.order.is_cancellable,
+                "is_editable": output.order.is_editable,
+                "created_at": output.order.created_at.isoformat(),
+                "updated_at": output.order.updated_at.isoformat(),
+            }
+        )
 
 
 class CancelOrderView(APIView):
@@ -739,17 +745,17 @@ class CancelOrderView(APIView):
             CancelOrderInput(
                 order_id=pk,
                 customer_id=request.user.customer.id,
-                reason=serializer.validated_data.get('reason', ''),
+                reason=serializer.validated_data.get("reason", ""),
             )
         )
 
         if not output.success:
             return Response(
-                {'error': output.error},
+                {"error": output.error},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        return Response({'status': 'cancelled'})
+        return Response({"status": "cancelled"})
 ```
 
 ### URLs (urls.py)
@@ -758,12 +764,12 @@ class CancelOrderView(APIView):
 from django.urls import path
 from apps.orders import views
 
-app_name = 'orders'
+app_name = "orders"
 
 urlpatterns = [
-    path('', views.OrderListCreateView.as_view(), name='order-list-create'),
-    path('<uuid:pk>/', views.OrderDetailView.as_view(), name='order-detail'),
-    path('<uuid:pk>/cancel/', views.CancelOrderView.as_view(), name='order-cancel'),
+    path("", views.OrderListCreateView.as_view(), name="order-list-create"),
+    path("<uuid:pk>/", views.OrderDetailView.as_view(), name="order-detail"),
+    path("<uuid:pk>/cancel/", views.CancelOrderView.as_view(), name="order-cancel"),
 ]
 ```
 
@@ -803,7 +809,7 @@ class TestCreateOrderUseCase:
 
         input_dto = CreateOrderInput(
             customer_id=uuid4(),
-            items=[OrderItemInput(uuid4(), 2, Decimal('10.00'))],
+            items=[OrderItemInput(uuid4(), 2, Decimal("10.00"))],
         )
 
         # Act
@@ -829,7 +835,7 @@ class TestCreateOrderUseCase:
 
         input_dto = CreateOrderInput(
             customer_id=uuid4(),
-            items=[OrderItemInput(uuid4(), 100, Decimal('10.00'))],
+            items=[OrderItemInput(uuid4(), 100, Decimal("10.00"))],
         )
 
         # Act

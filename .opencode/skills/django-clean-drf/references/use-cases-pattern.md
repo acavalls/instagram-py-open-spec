@@ -71,9 +71,7 @@ class CreateOrderUseCase:
     @transaction.atomic
     def execute(self, input_dto: CreateOrderInput) -> CreateOrderOutput:
         # 1. Validate business rules
-        is_valid, error = self._inventory_service.validate_availability(
-            input_dto.items
-        )
+        is_valid, error = self._inventory_service.validate_availability(input_dto.items)
         if not is_valid:
             return CreateOrderOutput(
                 success=False,
@@ -162,17 +160,17 @@ class CreateOrderInput:
 class CreateOrderInput:
     items: list[OrderItemInput]  # Can be mutated
 
+
 # BAD: Using dict instead of typed DTO
-def execute(self, data: dict) -> CreateOrderOutput:
-    ...
+def execute(self, data: dict) -> CreateOrderOutput: ...
+
 
 # BAD: Using Django model as input
-def execute(self, order: Order) -> CreateOrderOutput:
-    ...
+def execute(self, order: Order) -> CreateOrderOutput: ...
+
 
 # BAD: Using DRF serializer as input
-def execute(self, serializer: CreateOrderSerializer) -> CreateOrderOutput:
-    ...
+def execute(self, serializer: CreateOrderSerializer) -> CreateOrderOutput: ...
 ```
 
 ## Output DTOs
@@ -234,6 +232,7 @@ class CreateOrderUseCase:
         if not self._can_create():
             raise ValidationError("Cannot create order")
         return self._order_service.create(...)
+
 
 # GOOD
 class CreateOrderUseCase:
@@ -301,8 +300,8 @@ class CreateOrderView(APIView):
         output = use_case.execute(input_dto)
 
         if not output.success:
-            return Response({'error': output.error}, status=400)
-        return Response({'order_id': str(output.order_id)}, status=201)
+            return Response({"error": output.error}, status=400)
+        return Response({"order_id": str(output.order_id)}, status=201)
 ```
 
 ### Testing with Mocks
@@ -382,6 +381,7 @@ class ProcessOrderUseCase:
 
 ```python
 from django.db import transaction
+
 
 class CreateOrderUseCase:
     @transaction.atomic
@@ -489,12 +489,12 @@ from apps.orders.use_cases.cancel_order import (
 )
 
 __all__ = [
-    'CreateOrderUseCase',
-    'CreateOrderInput',
-    'CreateOrderOutput',
-    'CancelOrderUseCase',
-    'CancelOrderInput',
-    'CancelOrderOutput',
+    "CreateOrderUseCase",
+    "CreateOrderInput",
+    "CreateOrderOutput",
+    "CancelOrderUseCase",
+    "CancelOrderInput",
+    "CancelOrderOutput",
 ]
 ```
 

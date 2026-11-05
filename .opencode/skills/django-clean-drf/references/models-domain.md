@@ -34,18 +34,18 @@ class Order(models.Model):
     # ENUMS (TextChoices)
     # ====================================
     class Status(models.TextChoices):
-        PENDING = 'pending', 'Pending'
-        CONFIRMED = 'confirmed', 'Confirmed'
-        PROCESSING = 'processing', 'Processing'
-        SHIPPED = 'shipped', 'Shipped'
-        DELIVERED = 'delivered', 'Delivered'
-        CANCELLED = 'cancelled', 'Cancelled'
+        PENDING = "pending", "Pending"
+        CONFIRMED = "confirmed", "Confirmed"
+        PROCESSING = "processing", "Processing"
+        SHIPPED = "shipped", "Shipped"
+        DELIVERED = "delivered", "Delivered"
+        CANCELLED = "cancelled", "Cancelled"
 
     class Priority(models.TextChoices):
-        LOW = 'low', 'Low'
-        NORMAL = 'normal', 'Normal'
-        HIGH = 'high', 'High'
-        URGENT = 'urgent', 'Urgent'
+        LOW = "low", "Low"
+        NORMAL = "normal", "Normal"
+        HIGH = "high", "High"
+        URGENT = "urgent", "Urgent"
 
     # ====================================
     # FIELDS
@@ -60,14 +60,14 @@ class Order(models.Model):
 
     # Relationships
     customer = models.ForeignKey(
-        'customers.Customer',
+        "customers.Customer",
         on_delete=models.PROTECT,
-        related_name='orders',
+        related_name="orders",
     )
     shipping_address = models.ForeignKey(
-        'addresses.Address',
+        "addresses.Address",
         on_delete=models.SET_NULL,
-        related_name='shipping_orders',
+        related_name="shipping_orders",
         null=True,
         blank=True,
     )
@@ -84,8 +84,8 @@ class Order(models.Model):
         choices=Priority.choices,
         default=Priority.NORMAL,
     )
-    notes = models.TextField(blank=True, default='')
-    tracking_number = models.CharField(max_length=100, blank=True, default='')
+    notes = models.TextField(blank=True, default="")
+    tracking_number = models.CharField(max_length=100, blank=True, default="")
 
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
@@ -98,19 +98,19 @@ class Order(models.Model):
     # META
     # ====================================
     class Meta:
-        ordering = ['-created_at']
-        verbose_name = 'Order'
-        verbose_name_plural = 'Orders'
+        ordering = ["-created_at"]
+        verbose_name = "Order"
+        verbose_name_plural = "Orders"
         indexes = [
-            models.Index(fields=['customer', 'status']),
-            models.Index(fields=['status', 'created_at']),
-            models.Index(fields=['created_at']),
-            models.Index(fields=['tracking_number']),
+            models.Index(fields=["customer", "status"]),
+            models.Index(fields=["status", "created_at"]),
+            models.Index(fields=["created_at"]),
+            models.Index(fields=["tracking_number"]),
         ]
         constraints = [
             models.CheckConstraint(
                 check=models.Q(status__in=[s.value for s in Status]),
-                name='valid_order_status',
+                name="valid_order_status",
             ),
         ]
 
@@ -158,9 +158,7 @@ class Order(models.Model):
     @property
     def total(self) -> Decimal:
         """Calculate order total from items."""
-        return sum(
-            item.subtotal for item in self.items.all()
-        ) or Decimal('0.00')
+        return sum(item.subtotal for item in self.items.all()) or Decimal("0.00")
 
     @property
     def items_count(self) -> int:
@@ -184,14 +182,14 @@ class Order(models.Model):
     def status_display_class(self) -> str:
         """CSS class for status display."""
         status_classes = {
-            self.Status.PENDING: 'warning',
-            self.Status.CONFIRMED: 'info',
-            self.Status.PROCESSING: 'primary',
-            self.Status.SHIPPED: 'primary',
-            self.Status.DELIVERED: 'success',
-            self.Status.CANCELLED: 'danger',
+            self.Status.PENDING: "warning",
+            self.Status.CONFIRMED: "info",
+            self.Status.PROCESSING: "primary",
+            self.Status.SHIPPED: "primary",
+            self.Status.DELIVERED: "success",
+            self.Status.CANCELLED: "danger",
         }
-        return status_classes.get(self.status, 'secondary')
+        return status_classes.get(self.status, "secondary")
 ```
 
 ## UUID Primary Keys
@@ -212,6 +210,7 @@ from django.db import models
 
 class BaseModel(models.Model):
     """Abstract base model with UUID primary key."""
+
     id = models.UUIDField(
         primary_key=True,
         default=uuid.uuid4,
@@ -224,7 +223,8 @@ class BaseModel(models.Model):
 
 class Order(BaseModel):
     """Order inherits UUID primary key."""
-    customer = models.ForeignKey('Customer', on_delete=models.PROTECT)
+
+    customer = models.ForeignKey("Customer", on_delete=models.PROTECT)
     ...
 ```
 
@@ -236,8 +236,10 @@ from django.urls import path
 from apps.orders import views
 
 urlpatterns = [
-    path('<uuid:pk>/', views.OrderDetailView.as_view(), name='order-detail'),
-    path('<uuid:order_id>/cancel/', views.CancelOrderView.as_view(), name='order-cancel'),
+    path("<uuid:pk>/", views.OrderDetailView.as_view(), name="order-detail"),
+    path(
+        "<uuid:order_id>/cancel/", views.CancelOrderView.as_view(), name="order-cancel"
+    ),
 ]
 ```
 
@@ -248,9 +250,9 @@ urlpatterns = [
 ```python
 class Order(models.Model):
     class Status(models.TextChoices):
-        PENDING = 'pending', 'Pending'
-        CONFIRMED = 'confirmed', 'Confirmed'
-        SHIPPED = 'shipped', 'Shipped'
+        PENDING = "pending", "Pending"
+        CONFIRMED = "confirmed", "Confirmed"
+        SHIPPED = "shipped", "Shipped"
 
     status = models.CharField(
         max_length=20,
@@ -264,12 +266,12 @@ class Order(models.Model):
 ```python
 class Order(models.Model):
     class Status(models.TextChoices):
-        PENDING = 'pending', 'Pending'
-        CONFIRMED = 'confirmed', 'Confirmed'
-        PROCESSING = 'processing', 'Processing'
-        SHIPPED = 'shipped', 'Shipped'
-        DELIVERED = 'delivered', 'Delivered'
-        CANCELLED = 'cancelled', 'Cancelled'
+        PENDING = "pending", "Pending"
+        CONFIRMED = "confirmed", "Confirmed"
+        PROCESSING = "processing", "Processing"
+        SHIPPED = "shipped", "Shipped"
+        DELIVERED = "delivered", "Delivered"
+        CANCELLED = "cancelled", "Cancelled"
 
         @classmethod
         def active_statuses(cls) -> list[str]:
@@ -292,10 +294,10 @@ class Order(models.Model):
 ```python
 class Order(models.Model):
     class Priority(models.IntegerChoices):
-        LOW = 1, 'Low'
-        NORMAL = 2, 'Normal'
-        HIGH = 3, 'High'
-        URGENT = 4, 'Urgent'
+        LOW = 1, "Low"
+        NORMAL = 2, "Normal"
+        HIGH = 3, "High"
+        URGENT = 4, "Urgent"
 
     priority = models.IntegerField(
         choices=Priority.choices,
@@ -311,16 +313,16 @@ class Order(models.Model):
 class Order(models.Model):
     # PROTECT: Prevent deletion if orders exist
     customer = models.ForeignKey(
-        'customers.Customer',
+        "customers.Customer",
         on_delete=models.PROTECT,
-        related_name='orders',
+        related_name="orders",
     )
 
     # SET_NULL: Allow deletion, set to null
     assigned_agent = models.ForeignKey(
-        'users.User',
+        "users.User",
         on_delete=models.SET_NULL,
-        related_name='assigned_orders',
+        related_name="assigned_orders",
         null=True,
         blank=True,
     )
@@ -336,14 +338,14 @@ class Order(models.Model):
 
 ```python
 # BAD: No related_name
-customer = models.ForeignKey('Customer', on_delete=models.PROTECT)
+customer = models.ForeignKey("Customer", on_delete=models.PROTECT)
 # Access: customer.order_set.all()  # Unclear
 
 # GOOD: Explicit related_name
 customer = models.ForeignKey(
-    'Customer',
+    "Customer",
     on_delete=models.PROTECT,
-    related_name='orders',
+    related_name="orders",
 )
 # Access: customer.orders.all()  # Clear
 ```
@@ -353,29 +355,30 @@ customer = models.ForeignKey(
 ```python
 class Order(models.Model):
     products = models.ManyToManyField(
-        'products.Product',
-        through='OrderItem',
-        related_name='orders',
+        "products.Product",
+        through="OrderItem",
+        related_name="orders",
     )
 
 
 class OrderItem(models.Model):
     """Through model for Order-Product relationship."""
+
     order = models.ForeignKey(
         Order,
         on_delete=models.CASCADE,
-        related_name='items',
+        related_name="items",
     )
     product = models.ForeignKey(
-        'products.Product',
+        "products.Product",
         on_delete=models.PROTECT,
-        related_name='order_items',
+        related_name="order_items",
     )
     quantity = models.PositiveIntegerField(default=1)
     unit_price = models.DecimalField(max_digits=10, decimal_places=2)
 
     class Meta:
-        unique_together = ['order', 'product']
+        unique_together = ["order", "product"]
 
     @property
     def subtotal(self) -> Decimal:
@@ -408,13 +411,11 @@ class Order(models.Model):
     class Meta:
         indexes = [
             # For: WHERE customer_id = ? AND status = ?
-            models.Index(fields=['customer', 'status']),
-
+            models.Index(fields=["customer", "status"]),
             # For: WHERE status = ? ORDER BY created_at DESC
-            models.Index(fields=['status', '-created_at']),
-
+            models.Index(fields=["status", "-created_at"]),
             # For: WHERE created_at BETWEEN ? AND ?
-            models.Index(fields=['created_at']),
+            models.Index(fields=["created_at"]),
         ]
 ```
 
@@ -426,9 +427,9 @@ class Order(models.Model):
         indexes = [
             # Index only active orders
             models.Index(
-                fields=['customer', 'created_at'],
-                condition=models.Q(status__in=['pending', 'confirmed']),
-                name='idx_active_orders',
+                fields=["customer", "created_at"],
+                condition=models.Q(status__in=["pending", "confirmed"]),
+                name="idx_active_orders",
             ),
         ]
 ```
@@ -475,6 +476,7 @@ def total(self) -> Decimal:
     self.save()  # Side effect!
     return total
 
+
 # GOOD: Pure calculation
 @property
 def total(self) -> Decimal:
@@ -485,6 +487,7 @@ def total(self) -> Decimal:
 
 ```python
 from functools import cached_property
+
 
 class Order(models.Model):
     @cached_property
@@ -501,7 +504,7 @@ For complex validations that need context, use methods returning `tuple[bool, st
 
 ```python
 class Order(models.Model):
-    def can_add_item(self, product: 'Product', quantity: int) -> tuple[bool, str]:
+    def can_add_item(self, product: "Product", quantity: int) -> tuple[bool, str]:
         """Check if item can be added to order."""
         if not self.is_editable:
             return False, "Order cannot be modified"
@@ -561,7 +564,7 @@ class SoftDeleteModel(models.Model):
         """Mark as deleted without removing from database."""
         self.is_deleted = True
         self.deleted_at = timezone.now()
-        self.save(update_fields=['is_deleted', 'deleted_at'])
+        self.save(update_fields=["is_deleted", "deleted_at"])
 
 
 class SoftDeleteManager(models.Manager):
@@ -580,19 +583,17 @@ class Order(SoftDeleteModel):
 
 ```python
 class OrderManager(models.Manager):
-    def active(self) -> QuerySet['Order']:
+    def active(self) -> QuerySet["Order"]:
         """Return only active orders."""
-        return self.filter(
-            status__in=Order.Status.active_statuses()
-        )
+        return self.filter(status__in=Order.Status.active_statuses())
 
-    def pending_shipment(self) -> QuerySet['Order']:
+    def pending_shipment(self) -> QuerySet["Order"]:
         """Return orders ready for shipment."""
         return self.filter(
             status=Order.Status.CONFIRMED,
-        ).select_related('customer', 'shipping_address')
+        ).select_related("customer", "shipping_address")
 
-    def for_customer(self, customer_id: UUID) -> QuerySet['Order']:
+    def for_customer(self, customer_id: UUID) -> QuerySet["Order"]:
         """Return orders for a specific customer."""
         return self.filter(customer_id=customer_id)
 
@@ -613,13 +614,14 @@ class Order(models.Model):
 ```python
 from django.db.models import GeneratedField, F
 
+
 class OrderItem(models.Model):
     quantity = models.PositiveIntegerField()
     unit_price = models.DecimalField(max_digits=10, decimal_places=2)
 
     # Database-computed field (PostgreSQL, MySQL 8+)
     subtotal = GeneratedField(
-        expression=F('quantity') * F('unit_price'),
+        expression=F("quantity") * F("unit_price"),
         output_field=models.DecimalField(max_digits=12, decimal_places=2),
         db_persist=True,  # Store in database (not virtual)
     )
@@ -630,16 +632,14 @@ class OrderItem(models.Model):
 ```python
 from django.db.models.functions import Now
 
+
 class Order(models.Model):
     created_at = models.DateTimeField(db_default=Now())
 
     # With expression
     order_number = models.CharField(
         max_length=20,
-        db_default=Concat(
-            Value('ORD-'),
-            Cast(Now(), output_field=CharField())
-        ),
+        db_default=Concat(Value("ORD-"), Cast(Now(), output_field=CharField())),
     )
 ```
 
@@ -657,11 +657,13 @@ class Order(models.Model):
         self.customer.send_cancellation_email()
         self.refund_payment()
 
+
 # GOOD: Model is just data + properties
 class Order(models.Model):
     @property
     def is_cancellable(self) -> bool:
         return self.status in (...)
+
 
 # Service handles the operation
 class OrderService:
@@ -680,6 +682,7 @@ class Order(models.Model):
     def shipping_cost(self) -> Decimal:
         return ShippingAPI.calculate(self.shipping_address)  # External call!
 
+
 # GOOD: Calculate in service with explicit dependency
 class OrderService:
     def __init__(self, shipping_api: ShippingAPI):
@@ -694,16 +697,21 @@ class OrderService:
 ```python
 # BAD: Implicit related_name
 class Order(models.Model):
-    customer = models.ForeignKey('Customer', on_delete=models.PROTECT)
+    customer = models.ForeignKey("Customer", on_delete=models.PROTECT)
+
+
 # Access: customer.order_set.all()
+
 
 # GOOD: Explicit related_name
 class Order(models.Model):
     customer = models.ForeignKey(
-        'Customer',
+        "Customer",
         on_delete=models.PROTECT,
-        related_name='orders',
+        related_name="orders",
     )
+
+
 # Access: customer.orders.all()
 ```
 
@@ -721,6 +729,7 @@ class Order(models.Model):
         self.update_inventory()
         self.notify_warehouse()
         ...
+
 
 # GOOD: Model is lean, services handle operations
 class Order(models.Model):

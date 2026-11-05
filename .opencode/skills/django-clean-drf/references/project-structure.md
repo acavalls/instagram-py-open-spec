@@ -183,7 +183,7 @@ from apps.users.models import User
 from apps.orders.services.order_service import OrderService
 from apps.orders.services.inventory_service import InventoryService
 
-__all__ = ['OrderService', 'InventoryService']
+__all__ = ["OrderService", "InventoryService"]
 ```
 
 ### use_cases/__init__.py
@@ -200,12 +200,12 @@ from apps.orders.use_cases.cancel_order import (
 )
 
 __all__ = [
-    'CreateOrderUseCase',
-    'CreateOrderInput',
-    'CreateOrderOutput',
-    'CancelOrderUseCase',
-    'CancelOrderInput',
-    'CancelOrderOutput',
+    "CreateOrderUseCase",
+    "CreateOrderInput",
+    "CreateOrderOutput",
+    "CancelOrderUseCase",
+    "CancelOrderInput",
+    "CancelOrderOutput",
 ]
 ```
 
@@ -221,6 +221,7 @@ from django.db import models
 
 class BaseModel(models.Model):
     """Base model with UUID primary key and timestamps."""
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -231,6 +232,7 @@ class BaseModel(models.Model):
 
 class TenantAwareModel(BaseModel):
     """Base model for multi-tenant applications."""
+
     # Override in concrete models to add tenant FK
 
     class Meta:
@@ -246,14 +248,15 @@ from typing import Protocol
 @dataclass(frozen=True, slots=True)
 class BaseOutput:
     """Base output for all use cases."""
+
     success: bool
     error: str | None = None
 
 
 class UseCase(Protocol):
     """Protocol for use cases."""
-    def execute(self, input_dto) -> BaseOutput:
-        ...
+
+    def execute(self, input_dto) -> BaseOutput: ...
 ```
 
 ### core/services.py
@@ -261,11 +264,12 @@ class UseCase(Protocol):
 from typing import TypeVar, Generic
 from django.db.models import Model, QuerySet
 
-T = TypeVar('T', bound=Model)
+T = TypeVar("T", bound=Model)
 
 
 class BaseQueryService(Generic[T]):
     """Base class for read-only services."""
+
     model: type[T]
 
     @classmethod
@@ -288,23 +292,23 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # Apps organization
 DJANGO_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
 ]
 
 THIRD_PARTY_APPS = [
-    'rest_framework',
-    'django_filters',
-    'corsheaders',
+    "rest_framework",
+    "django_filters",
+    "corsheaders",
 ]
 
 LOCAL_APPS = [
-    'apps.users',
-    'apps.orders',
+    "apps.users",
+    "apps.orders",
     # Add new apps here
 ]
 
@@ -312,18 +316,18 @@ INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
 # REST Framework
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
     ],
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
     ],
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 20,
-    'DEFAULT_FILTER_BACKENDS': [
-        'django_filters.rest_framework.DjangoFilterBackend',
-        'rest_framework.filters.SearchFilter',
-        'rest_framework.filters.OrderingFilter',
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "PAGE_SIZE": 20,
+    "DEFAULT_FILTER_BACKENDS": [
+        "django_filters.rest_framework.DjangoFilterBackend",
+        "rest_framework.filters.SearchFilter",
+        "rest_framework.filters.OrderingFilter",
     ],
 }
 ```
@@ -336,9 +340,9 @@ from django.contrib import admin
 from django.urls import path, include
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('api/users/', include('apps.users.urls')),
-    path('api/orders/', include('apps.orders.urls')),
+    path("admin/", admin.site.urls),
+    path("api/users/", include("apps.users.urls")),
+    path("api/orders/", include("apps.orders.urls")),
 ]
 ```
 
@@ -347,12 +351,12 @@ urlpatterns = [
 from django.urls import path
 from apps.orders import views
 
-app_name = 'orders'
+app_name = "orders"
 
 urlpatterns = [
-    path('', views.OrderListCreateView.as_view(), name='order-list-create'),
-    path('<uuid:pk>/', views.OrderDetailView.as_view(), name='order-detail'),
-    path('<uuid:pk>/cancel/', views.CancelOrderView.as_view(), name='order-cancel'),
+    path("", views.OrderListCreateView.as_view(), name="order-list-create"),
+    path("<uuid:pk>/", views.OrderDetailView.as_view(), name="order-detail"),
+    path("<uuid:pk>/cancel/", views.CancelOrderView.as_view(), name="order-cancel"),
 ]
 ```
 

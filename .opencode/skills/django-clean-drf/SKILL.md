@@ -127,17 +127,20 @@ from dataclasses import dataclass
 from uuid import UUID
 from django.db import transaction
 
+
 @dataclass(frozen=True, slots=True)
 class CreateOrderInput:
     customer_id: UUID
-    items: list['OrderItemInput']
+    items: list["OrderItemInput"]
     notes: str | None = None
+
 
 @dataclass(frozen=True, slots=True)
 class CreateOrderOutput:
     success: bool
     order_id: UUID | None = None
     error: str | None = None
+
 
 class CreateOrderUseCase:
     def __init__(
@@ -169,7 +172,7 @@ class OrderService:
     # STATIC methods for QUERIES (no state changes)
     @staticmethod
     def get_by_id(order_id: UUID) -> Order | None:
-        return Order.objects.select_related('customer').filter(id=order_id).first()
+        return Order.objects.select_related("customer").filter(id=order_id).first()
 
     # INSTANCE methods for MUTATIONS (state changes)
     def create(self, customer_id: UUID, items: list[OrderItemInput]) -> Order:
@@ -202,8 +205,8 @@ class CreateOrderView(APIView):
         output = use_case.execute(input_dto)
 
         if not output.success:
-            return Response({'error': output.error}, status=400)
-        return Response({'order_id': str(output.order_id)}, status=201)
+            return Response({"error": output.error}, status=400)
+        return Response({"order_id": str(output.order_id)}, status=201)
 ```
 
 **Serializer Separation:**
@@ -213,13 +216,14 @@ class CreateOrderSerializer(serializers.Serializer):
     items = OrderItemInputSerializer(many=True, min_length=1)
     notes = serializers.CharField(max_length=500, required=False)
 
+
 # READ serializer (output display)
 class OrderReadSerializer(serializers.ModelSerializer):
-    customer_name = serializers.CharField(source='customer.name', read_only=True)
+    customer_name = serializers.CharField(source="customer.name", read_only=True)
 
     class Meta:
         model = Order
-        fields = ['id', 'customer_name', 'status', 'created_at']
+        fields = ["id", "customer_name", "status", "created_at"]
         read_only_fields = fields
 ```
 
@@ -227,18 +231,22 @@ class OrderReadSerializer(serializers.ModelSerializer):
 ```python
 class Order(models.Model):
     class Status(models.TextChoices):
-        PENDING = 'pending', 'Pending'
-        CONFIRMED = 'confirmed', 'Confirmed'
-        SHIPPED = 'shipped', 'Shipped'
+        PENDING = "pending", "Pending"
+        CONFIRMED = "confirmed", "Confirmed"
+        SHIPPED = "shipped", "Shipped"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    customer = models.ForeignKey('Customer', on_delete=models.PROTECT, related_name='orders')
-    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    customer = models.ForeignKey(
+        "Customer", on_delete=models.PROTECT, related_name="orders"
+    )
+    status = models.CharField(
+        max_length=20, choices=Status.choices, default=Status.PENDING
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ['-created_at']
-        indexes = [models.Index(fields=['customer', 'status'])]
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["customer", "status"])]
 
     @property
     def is_cancellable(self) -> bool:
@@ -352,6 +360,7 @@ def create_order(self, data):
         raise ValidationError("Cannot create order")
     return Order.objects.create(**data)
 
+
 # GOOD
 def create_order(self, data) -> CreateOrderOutput:
     if not self.can_create():
@@ -364,11 +373,12 @@ def create_order(self, data) -> CreateOrderOutput:
 ```python
 # BAD
 def validate(self, order) -> bool:
-    return order.status != 'shipped'
+    return order.status != "shipped"
+
 
 # GOOD
 def validate(self, order) -> tuple[bool, str]:
-    if order.status == 'shipped':
+    if order.status == "shipped":
         return False, "Cannot modify shipped orders"
     return True, ""
 ```
@@ -380,6 +390,7 @@ class CreateOrderUseCase:
     def execute(self, input_dto):
         service = OrderService()  # Hardcoded dependency
         return service.create(input_dto)
+
 
 # GOOD - Easy to mock
 class CreateOrderUseCase:

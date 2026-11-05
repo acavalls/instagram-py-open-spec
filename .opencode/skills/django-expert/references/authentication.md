@@ -43,14 +43,16 @@ urlpatterns = [
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 
+
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
         # Add custom claims
-        token['email'] = user.email
-        token['role'] = user.role
+        token["email"] = user.email
+        token["role"] = user.role
         return token
+
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
@@ -61,11 +63,13 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 ```python
 from rest_framework import permissions
 
+
 class IsOwnerOrReadOnly(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         if request.method in permissions.SAFE_METHODS:
             return True
         return obj.created_by == request.user
+
 
 class IsAdminOrReadOnly(permissions.BasePermission):
     def has_permission(self, request, view):
@@ -73,9 +77,10 @@ class IsAdminOrReadOnly(permissions.BasePermission):
             return True
         return request.user.is_staff
 
+
 class HasAPIKey(permissions.BasePermission):
     def has_permission(self, request, view):
-        api_key = request.headers.get('X-API-Key')
+        api_key = request.headers.get("X-API-Key")
         return api_key == settings.API_KEY
 ```
 
@@ -86,9 +91,9 @@ class ProductViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
 
     def get_permissions(self):
-        if self.action == 'destroy':
+        if self.action == "destroy":
             return [permissions.IsAdminUser()]
-        if self.action in ['create', 'update', 'partial_update']:
+        if self.action in ["create", "update", "partial_update"]:
             return [permissions.IsAuthenticated()]
         return [permissions.AllowAny()]
 ```
@@ -102,16 +107,17 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['email', 'username', 'password', 'password_confirm']
+        fields = ["email", "username", "password", "password_confirm"]
 
     def validate(self, attrs):
-        if attrs['password'] != attrs['password_confirm']:
+        if attrs["password"] != attrs["password_confirm"]:
             raise serializers.ValidationError("Passwords don't match")
         return attrs
 
     def create(self, validated_data):
-        validated_data.pop('password_confirm')
+        validated_data.pop("password_confirm")
         return User.objects.create_user(**validated_data)
+
 
 class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer

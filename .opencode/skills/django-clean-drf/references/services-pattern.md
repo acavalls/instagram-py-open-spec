@@ -38,9 +38,8 @@ class OrderService:
     def get_by_id(order_id: UUID) -> Order | None:
         """Get order by ID with optimized relations."""
         return (
-            Order.objects
-            .select_related('customer', 'shipping_address')
-            .prefetch_related('items__product')
+            Order.objects.select_related("customer", "shipping_address")
+            .prefetch_related("items__product")
             .filter(id=order_id)
             .first()
         )
@@ -48,12 +47,7 @@ class OrderService:
     @staticmethod
     def get_by_id_for_update(order_id: UUID) -> Order | None:
         """Get order with row lock for update operations."""
-        return (
-            Order.objects
-            .select_for_update()
-            .filter(id=order_id)
-            .first()
-        )
+        return Order.objects.select_for_update().filter(id=order_id).first()
 
     @staticmethod
     def list_for_customer(
@@ -63,11 +57,10 @@ class OrderService:
     ) -> QuerySet[Order]:
         """List orders for a customer with optional filtering."""
         qs = (
-            Order.objects
-            .filter(customer_id=customer_id)
-            .select_related('customer')
-            .prefetch_related('items')
-            .order_by('-created_at')
+            Order.objects.filter(customer_id=customer_id)
+            .select_related("customer")
+            .prefetch_related("items")
+            .order_by("-created_at")
         )
         if status:
             qs = qs.filter(status=status)
@@ -82,12 +75,11 @@ class OrderService:
     def count_by_status(customer_id: UUID) -> dict[str, int]:
         """Count orders by status for a customer."""
         result = (
-            Order.objects
-            .filter(customer_id=customer_id)
-            .values('status')
-            .annotate(count=Count('id'))
+            Order.objects.filter(customer_id=customer_id)
+            .values("status")
+            .annotate(count=Count("id"))
         )
-        return {item['status']: item['count'] for item in result}
+        return {item["status"]: item["count"] for item in result}
 
     # ====================================
     # MUTATIONS (Instance Methods)
@@ -96,14 +88,14 @@ class OrderService:
     def create(
         self,
         customer_id: UUID,
-        items: list['OrderItemInput'],
+        items: list["OrderItemInput"],
         notes: str | None = None,
         shipping_address_id: UUID | None = None,
     ) -> Order:
         """Create a new order with items."""
         order = Order.objects.create(
             customer_id=customer_id,
-            notes=notes or '',
+            notes=notes or "",
             shipping_address_id=shipping_address_id,
         )
         for item in items:
@@ -118,14 +110,14 @@ class OrderService:
     def update_status(self, order: Order, new_status: Order.Status) -> Order:
         """Update order status."""
         order.status = new_status
-        order.save(update_fields=['status', 'updated_at'])
+        order.save(update_fields=["status", "updated_at"])
         return order
 
     def cancel(self, order: Order, reason: str | None = None) -> Order:
         """Cancel an order."""
         order.status = Order.Status.CANCELLED
-        order.cancellation_reason = reason or ''
-        order.save(update_fields=['status', 'cancellation_reason', 'updated_at'])
+        order.cancellation_reason = reason or ""
+        order.save(update_fields=["status", "cancellation_reason", "updated_at"])
         return order
 
     def add_item(
@@ -133,7 +125,7 @@ class OrderService:
         order: Order,
         product_id: UUID,
         quantity: int,
-        unit_price: 'Decimal',
+        unit_price: "Decimal",
     ) -> OrderItem:
         """Add item to existing order."""
         return OrderItem.objects.create(
@@ -193,12 +185,7 @@ def get_by_id(order_id: UUID) -> Order | None:
     return Order.objects.filter(id=order_id).first()
 
     # GOOD: Joins customer in single query
-    return (
-        Order.objects
-        .select_related('customer')
-        .filter(id=order_id)
-        .first()
-    )
+    return Order.objects.select_related("customer").filter(id=order_id).first()
 ```
 
 #### Use prefetch_related for Reverse Relations
@@ -210,12 +197,7 @@ def get_with_items(order_id: UUID) -> Order | None:
     return Order.objects.filter(id=order_id).first()
 
     # GOOD: Prefetches items in separate query
-    return (
-        Order.objects
-        .prefetch_related('items__product')
-        .filter(id=order_id)
-        .first()
-    )
+    return Order.objects.prefetch_related("items__product").filter(id=order_id).first()
 ```
 
 #### Combine for Complex Relations
@@ -224,15 +206,14 @@ def get_with_items(order_id: UUID) -> Order | None:
 @staticmethod
 def get_full_order(order_id: UUID) -> Order | None:
     return (
-        Order.objects
-        .select_related(
-            'customer',
-            'shipping_address',
-            'billing_address',
+        Order.objects.select_related(
+            "customer",
+            "shipping_address",
+            "billing_address",
         )
         .prefetch_related(
-            'items__product__category',
-            'status_history',
+            "items__product__category",
+            "status_history",
         )
         .filter(id=order_id)
         .first()
@@ -244,15 +225,15 @@ def get_full_order(order_id: UUID) -> Order | None:
 ```python
 from django.db.models import Prefetch
 
+
 @staticmethod
 def get_with_active_items(order_id: UUID) -> Order | None:
     return (
-        Order.objects
-        .prefetch_related(
+        Order.objects.prefetch_related(
             Prefetch(
-                'items',
+                "items",
                 queryset=OrderItem.objects.filter(is_active=True),
-                to_attr='active_items',
+                to_attr="active_items",
             )
         )
         .filter(id=order_id)
@@ -265,28 +246,28 @@ def get_with_active_items(order_id: UUID) -> Order | None:
 ```python
 from django.db.models import Count, Sum, Avg, F
 
+
 @staticmethod
 def get_customer_stats(customer_id: UUID) -> dict:
     """Get aggregated statistics for a customer."""
     stats = Order.objects.filter(customer_id=customer_id).aggregate(
-        total_orders=Count('id'),
-        total_spent=Sum('total'),
-        average_order_value=Avg('total'),
+        total_orders=Count("id"),
+        total_spent=Sum("total"),
+        average_order_value=Avg("total"),
     )
     return stats
+
 
 @staticmethod
 def get_top_customers(limit: int = 10) -> QuerySet:
     """Get top customers by total spent."""
     return (
-        Customer.objects
-        .annotate(
-            total_spent=Sum('orders__total'),
-            order_count=Count('orders'),
+        Customer.objects.annotate(
+            total_spent=Sum("orders__total"),
+            order_count=Count("orders"),
         )
         .filter(total_spent__gt=0)
-        .order_by('-total_spent')
-        [:limit]
+        .order_by("-total_spent")[:limit]
     )
 ```
 
@@ -300,6 +281,7 @@ def exists(order_id: UUID) -> bool:
 
     # GOOD: Only checks existence
     return Order.objects.filter(id=order_id).exists()
+
 
 @staticmethod
 def has_pending_orders(customer_id: UUID) -> bool:
@@ -331,7 +313,7 @@ def create(
     """Create a new order with items."""
     order = Order.objects.create(
         customer_id=customer_id,
-        notes=notes or '',
+        notes=notes or "",
         status=Order.Status.PENDING,
     )
 
@@ -379,8 +361,9 @@ def create_with_items(
 def update_status(self, order: Order, new_status: Order.Status) -> Order:
     """Update only the status field."""
     order.status = new_status
-    order.save(update_fields=['status', 'updated_at'])
+    order.save(update_fields=["status", "updated_at"])
     return order
+
 
 def update_shipping(
     self,
@@ -392,7 +375,7 @@ def update_shipping(
     order.tracking_number = tracking_number
     order.carrier = carrier
     order.shipped_at = timezone.now()
-    order.save(update_fields=['tracking_number', 'carrier', 'shipped_at', 'updated_at'])
+    order.save(update_fields=["tracking_number", "carrier", "shipped_at", "updated_at"])
     return order
 ```
 
@@ -401,22 +384,18 @@ def update_shipping(
 ```python
 from django.db import transaction
 
+
 def reserve_stock(self, product_id: UUID, quantity: int) -> bool:
     """Reserve stock with row locking to prevent overselling."""
     with transaction.atomic():
-        product = (
-            Product.objects
-            .select_for_update()
-            .filter(id=product_id)
-            .first()
-        )
+        product = Product.objects.select_for_update().filter(id=product_id).first()
         if not product:
             return False
         if product.stock < quantity:
             return False
 
-        product.stock = F('stock') - quantity
-        product.save(update_fields=['stock'])
+        product.stock = F("stock") - quantity
+        product.save(update_fields=["stock"])
         return True
 ```
 
@@ -480,7 +459,7 @@ def validate_can_checkout(
         return False, "Cannot checkout empty order"
 
     # Check all items in stock
-    for item in order.items.select_related('product'):
+    for item in order.items.select_related("product"):
         if item.product.stock < item.quantity:
             return False, f"Insufficient stock for {item.product.name}"
 
@@ -504,8 +483,8 @@ def validate_can_checkout(
 class OrderService:
     def __init__(
         self,
-        inventory_service: 'InventoryService | None' = None,
-        notification_service: 'NotificationService | None' = None,
+        inventory_service: "InventoryService | None" = None,
+        notification_service: "NotificationService | None" = None,
     ):
         self._inventory_service = inventory_service or InventoryService()
         self._notification_service = notification_service
@@ -560,18 +539,22 @@ apps/orders/services/
 ```python
 # apps/orders/services/order_service.py
 
+
 class OrderService:
     """Main order operations."""
+
     ...
 
 
 class OrderItemService:
     """Order item specific operations."""
+
     ...
 
 
 class OrderHistoryService:
     """Order status history operations."""
+
     ...
 ```
 
@@ -582,7 +565,7 @@ class OrderHistoryService:
 from apps.orders.services.order_service import OrderService
 from apps.orders.services.shipping_service import ShippingService
 
-__all__ = ['OrderService', 'ShippingService']
+__all__ = ["OrderService", "ShippingService"]
 ```
 
 ## Anti-Patterns to Avoid
@@ -600,10 +583,12 @@ def get_or_create_order(self, customer_id: UUID) -> Order:
         order = Order.objects.create(customer_id=customer_id)
     return order
 
+
 # GOOD: Separate methods
 @staticmethod
 def get_pending_order(customer_id: UUID) -> Order | None:
     return Order.objects.filter(...).first()
+
 
 def create_order(self, customer_id: UUID) -> Order:
     return Order.objects.create(...)
@@ -616,6 +601,7 @@ def create_order(self, customer_id: UUID) -> Order:
 def validate_can_cancel(self, order: Order) -> None:
     if order.status == Order.Status.SHIPPED:
         raise ValidationError("Cannot cancel shipped orders")
+
 
 # GOOD: Returns tuple
 def validate_can_cancel(self, order: Order) -> tuple[bool, str]:
@@ -630,11 +616,13 @@ def validate_can_cancel(self, order: Order) -> tuple[bool, str]:
 # BAD: Service knows about HTTP
 from rest_framework.exceptions import NotFound
 
+
 def get_order(self, order_id: UUID) -> Order:
     order = Order.objects.filter(id=order_id).first()
     if not order:
         raise NotFound("Order not found")  # HTTP exception!
     return order
+
 
 # GOOD: Return None, let caller handle
 @staticmethod
@@ -650,13 +638,9 @@ def get_by_id(order_id: UUID) -> Order | None:
 def get_all() -> QuerySet[Order]:
     return Order.objects.all()
 
+
 # GOOD: Prefetch relations
 @staticmethod
 def get_all() -> QuerySet[Order]:
-    return (
-        Order.objects
-        .select_related('customer')
-        .prefetch_related('items')
-        .all()
-    )
+    return Order.objects.select_related("customer").prefetch_related("items").all()
 ```

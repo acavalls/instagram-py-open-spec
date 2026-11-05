@@ -184,13 +184,14 @@ return Response(
 from rest_framework.views import exception_handler
 from rest_framework.response import Response
 
+
 def custom_exception_handler(exc, context):
     response = exception_handler(exc, context)
 
     if response is not None:
         # Ensure consistent format
-        if 'detail' in response.data:
-            response.data = {'error': response.data['detail']}
+        if "detail" in response.data:
+            response.data = {"error": response.data["detail"]}
 
     return response
 ```
@@ -206,6 +207,7 @@ class CreateOrderSerializer(serializers.Serializer):
     items = OrderItemSerializer(many=True, min_length=1)
     notes = serializers.CharField(max_length=500, required=False)
 
+
 # View validates before processing
 serializer = CreateOrderSerializer(data=request.data)
 serializer.is_valid(raise_exception=True)  # Returns 400 if invalid
@@ -219,11 +221,8 @@ class OrderService:
     @staticmethod
     def get_for_user(order_id: UUID, user_id: UUID) -> Order | None:
         """Get order only if user owns it."""
-        return (
-            Order.objects
-            .filter(id=order_id, customer__user_id=user_id)
-            .first()
-        )
+        return Order.objects.filter(id=order_id, customer__user_id=user_id).first()
+
 
 # In use case
 order = self._order_service.get_for_user(input_dto.order_id, input_dto.user_id)
@@ -252,6 +251,7 @@ STRIPE_KEY = "sk_live_abc123"
 
 # GOOD - Environment variables
 import environ
+
 env = environ.Env()
 STRIPE_KEY = env("STRIPE_KEY")
 
@@ -266,7 +266,8 @@ DEBUG = env.bool("DEBUG", default=False)
 class OrderReadSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
-        fields = ['id', 'status']  # id is auto-increment
+        fields = ["id", "status"]  # id is auto-increment
+
 
 # GOOD - Use UUID
 class Order(models.Model):
@@ -282,11 +283,12 @@ class Order(models.Model):
 class Migration(migrations.Migration):
     operations = [
         migrations.AddField(
-            model_name='order',
-            name='tracking_number',
+            model_name="order",
+            name="tracking_number",
             field=models.CharField(max_length=100, null=True, blank=True),
         ),
     ]
+
 
 # 2. Later migration: backfill data, then make non-null if needed
 ```
@@ -308,10 +310,10 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AddIndex(
-            model_name='order',
+            model_name="order",
             index=models.Index(
-                fields=['status', 'created_at'],
-                name='order_status_created_idx',
+                fields=["status", "created_at"],
+                name="order_status_created_idx",
             ),
         ),
     ]
@@ -329,6 +331,7 @@ class Migration(migrations.Migration):
        legacy_status = models.CharField(max_length=20, null=True)  # "might need later"
        status_v2 = models.JSONField(null=True)  # "for future flexibility"
 
+
    # GOOD - Only what's needed now
    class Order(models.Model):
        status = models.CharField(max_length=20, choices=Status.choices)
@@ -341,6 +344,7 @@ class Migration(migrations.Migration):
        def get_by_id(self, id: UUID) -> T | None: ...
        def create(self, **kwargs) -> T: ...
        def update(self, entity: T, **kwargs) -> T: ...
+
 
    # GOOD - Simple, direct implementation
    class OrderService:
@@ -365,12 +369,13 @@ class Migration(migrations.Migration):
    # BAD - Over-engineered for simple case
    class OrderStatusStateMachine:
        transitions = {
-           'pending': ['confirmed', 'cancelled'],
-           'confirmed': ['shipped', 'cancelled'],
+           "pending": ["confirmed", "cancelled"],
+           "confirmed": ["shipped", "cancelled"],
        }
 
        def can_transition(self, from_status, to_status): ...
        def transition(self, order, to_status): ...
+
 
    # GOOD - Simple validation for 4 statuses
    def validate_can_ship(self, order: Order) -> tuple[bool, str]:
@@ -389,6 +394,7 @@ print(f"Order created: {order.id}")
 
 # GOOD
 import logging
+
 logger = logging.getLogger(__name__)
 logger.info("Order created", extra={"order_id": str(order.id)})
 ```
@@ -406,7 +412,9 @@ logger.info("Order created", extra={"order_id": str(order.id)})
 ```python
 logger.debug("Processing order items", extra={"count": len(items)})
 logger.info("Order created", extra={"order_id": str(order.id)})
-logger.warning("Stock low", extra={"product_id": str(product.id), "stock": product.stock})
+logger.warning(
+    "Stock low", extra={"product_id": str(product.id), "stock": product.stock}
+)
 logger.error("Payment failed", extra={"order_id": str(order.id), "error": str(e)})
 ```
 
@@ -428,9 +436,8 @@ class OrderService:
             The order with customer and items prefetched, or None if not found.
         """
         return (
-            Order.objects
-            .select_related('customer')
-            .prefetch_related('items')
+            Order.objects.select_related("customer")
+            .prefetch_related("items")
             .filter(id=order_id)
             .first()
         )
@@ -452,21 +459,19 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from apps.orders.models import Order
 
+
 class OrderService:
     @staticmethod
-    def get_by_id(order_id: UUID) -> "Order | None":
-        ...
+    def get_by_id(order_id: UUID) -> "Order | None": ...
 
     def create(
         self,
         customer_id: UUID,
         items: list[OrderItemInput],
         notes: str | None = None,
-    ) -> "Order":
-        ...
+    ) -> "Order": ...
 
-    def validate_can_cancel(self, order: "Order") -> tuple[bool, str]:
-        ...
+    def validate_can_cancel(self, order: "Order") -> tuple[bool, str]: ...
 ```
 
 ## Code Review Checklist
