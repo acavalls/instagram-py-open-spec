@@ -62,6 +62,39 @@ class TestRegisterView:
         assert response.status_code == 200
         assert b"Password must be at least 8 characters" in response.content
 
+    def test_username_format_validation(self, client):
+        too_short = client.post(
+            "/web/register/",
+            {
+                "username": "ab",
+                "email": "new@example.com",
+                "password": "s3cretpass",
+            },
+        )
+        non_alnum = client.post(
+            "/web/register/",
+            {
+                "username": "user name!",
+                "email": "new@example.com",
+                "password": "s3cretpass",
+            },
+        )
+        too_long = client.post(
+            "/web/register/",
+            {
+                "username": "a" * 151,
+                "email": "new@example.com",
+                "password": "s3cretpass",
+            },
+        )
+
+        assert too_short.status_code == 200
+        assert b"Username must be between 3 and 150 characters" in too_short.content
+        assert non_alnum.status_code == 200
+        assert b"Username must contain only letters and numbers" in non_alnum.content
+        assert too_long.status_code == 200
+        assert b"Username must be between 3 and 150 characters" in too_long.content
+
 
 class TestLoginView:
     def test_successful_web_login(self, client):

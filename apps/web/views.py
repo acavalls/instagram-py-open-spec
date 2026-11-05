@@ -48,6 +48,16 @@ def register_view(request):
         email = request.POST.get("email", "").strip()
         password = request.POST.get("password", "")
 
+        if not 3 <= len(username) <= 150:
+            msg = "Username must be between 3 and 150 characters"
+            messages.error(request, msg)
+            return render(request, "web/register.html", {"error": msg})
+
+        if not username.isalnum():
+            msg = "Username must contain only letters and numbers"
+            messages.error(request, msg)
+            return render(request, "web/register.html", {"error": msg})
+
         if len(password) < 8:
             msg = "Password must be at least 8 characters"
             messages.error(request, msg)

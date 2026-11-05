@@ -16,6 +16,8 @@
 - [x] 3.2 Implement the web register view (`/web/register/`) with the 8-character password rule and success/error toasts, plus `register.html` template in the Instagram card style; verify tests for "Successful registration", "Duplicate email rejected", "Duplicate username rejected" and "Password too short rejected" pass
 - [x] 3.3 Implement `UserCreateSerializer` (email, username 3–150 alphanumeric, password min 8, write-only) and `RegisterAPIView` (`POST /api/auth/register/`, 201/400/409); verify tests for "Successful API registration", "API registration conflict" and "API registration validation error" pass
 
+- [x] 3.4 Enforce username format (alphanumeric, 3-150) in the web register view, matching the API serializer rules; verify the "Username format validation" scenario test passes on the web path
+
 ## 4. Web session authentication (Requirements: Web session login, Web session logout)
 
 - [x] 4.1 Implement `AuthenticateUserUseCase` with the generic "Invalid credentials" error and the web login view (`/web/login/`) that creates the session, redirects to the feed and shows the success toast; verify tests for "Successful web login" and "Failed web login hides the cause" pass
