@@ -63,6 +63,22 @@ class TestPostListCreateView:
         assert response.status_code == 400
         assert "caption" in response.json()
 
+    def test_caption_length_limit_on_update(self, api_client):
+        user = UserFactory()
+        post = PostFactory(owner=user)
+        api_client.force_authenticate(user=user)
+
+        response = api_client.patch(
+            f"/api/posts/{post.id}/",
+            {"caption": "x" * 2201},
+            format="json",
+        )
+
+        assert response.status_code == 400
+        assert "caption" in response.json()
+        post.refresh_from_db()
+        assert post.caption != "x" * 2201
+
     def test_api_list_of_own_posts(self, api_client):
         user = UserFactory()
         posts = [PostFactory(owner=user) for _ in range(2)]
