@@ -4,6 +4,7 @@ Scenarios: Successful web creation, Unauthenticated creation rejected,
 Bar lists followed users with active stories, Bar excludes non-followed
 users, Bar empty without followings, First view recorded, Repeated view
 is idempotent, Self-view rejected, Non-followed story not viewable,
+Expired story not viewable, Unknown story reported as not found,
 Unviewed groups first, Ring updates after viewing, Lazy purge on home
 render, Management command cleanup (spec delta: stories)."""
 
@@ -145,7 +146,25 @@ class TestStoryViewTracking:
         assert "users you follow" in response.content.decode()
         assert not StoryView.objects.filter(story=story, viewer=user).exists()
 
-    def test_unknown_story_rejected(self, client):
+    def test_expired_story_not_viewable(self, client):
+        """Scenario: Expired story not viewable."""
+        user = UserFactory()
+        author = UserFactory()
+        FollowFactory(follower=user, following=author)
+        story = StoryFactory(
+            owner=author,
+            expires_at=timezone.now() - timedelta(hours=1),
+        )
+        client.force_login(user)
+
+        response = client.post(f"/web/stories/{story.id}/view/")
+
+        assert response.status_code == 200
+        assert "Story has expired" in response.content.decode()
+        assert not StoryView.objects.filter(story=story, viewer=user).exists()
+
+    def test_unknown_story_reported_as_not_found(self, client):
+        """Scenario: Unknown story reported as not found."""
         user = UserFactory()
         client.force_login(user)
 

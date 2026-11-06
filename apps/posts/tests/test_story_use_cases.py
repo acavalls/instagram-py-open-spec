@@ -1,11 +1,13 @@
 """Tests for story use cases (CreateStory, ListFeedStories, ViewStory).
 
 Scenarios: Self-view rejected, Non-followed story not viewable, First view
-recorded (spec delta: stories)."""
+recorded, Expired story not viewable (spec delta: stories)."""
 
 import uuid
+from datetime import timedelta
 
 import pytest
+from django.utils import timezone
 
 from apps.accounts.tests.factories import UserFactory
 from apps.posts.services import StoryService
@@ -101,3 +103,21 @@ class TestViewStoryUseCase:
 
         assert not output.success
         assert output.error == "Story not found"
+
+    def test_rejects_expired_story(self):
+        """Scenario: Expired story not viewable."""
+        viewer = UserFactory()
+        author = UserFactory()
+        FollowFactory(follower=viewer, following=author)
+        story = StoryFactory(
+            owner=author,
+            expires_at=timezone.now() - timedelta(hours=1),
+        )
+
+        output = ViewStoryUseCase(story_service=StoryService()).execute(
+            ViewStoryInput(story_id=story.id, viewer_id=viewer.id)
+        )
+
+        assert not output.success
+        assert output.error == "Story has expired"
+        assert not StoryService.is_viewed(story.id, viewer.id)

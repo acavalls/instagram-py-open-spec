@@ -31,6 +31,9 @@ class ViewStoryUseCase:
         if story is None:
             return ViewStoryOutput(success=False, error="Story not found")
 
+        if story.is_expired():
+            return ViewStoryOutput(success=False, error="Story has expired")
+
         if story.owner_id == input_dto.viewer_id:  # type: ignore[attr-defined]
             return ViewStoryOutput(
                 success=False, error="You cannot view your own story"
