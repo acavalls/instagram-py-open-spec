@@ -1,17 +1,40 @@
-{% extends "web/base.html" %}
-
-{% block content %}
-<div class="auth-wrap">
-  <div class="phone-mockup">
-    <div class="phone-screen">
-      <div class="phone-post"></div>
-      <div class="phone-post"></div>
-      <div class="phone-post"></div>
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Instagram{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Grand+Hotel&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="{% static 'web/css/web.css' %}">
+</head>
+<body class="auth-page">
+  <div class="auth-wrap">
+    <div class="phone-mockup">
+      <div class="phone-screen">
+        <div class="phone-post"></div>
+        <div class="phone-post"></div>
+        <div class="phone-post"></div>
+      </div>
+    </div>
+    <div class="auth-column">
+      {% block content %}{% endblock %}
+      <div class="auth-footer">
+        <div class="auth-footer__links">
+          <a href="#">Meta</a>
+          <a href="#">About</a>
+          <a href="#">Blog</a>
+          <a href="#">Help</a>
+          <a href="#">API</a>
+          <a href="#">Privacy</a>
+          <a href="#">Terms</a>
+        </div>
+        <div class="auth-footer__copy">&copy; {% now "Y" %} Instagram Clone</div>
+      </div>
     </div>
   </div>
-  <div class="auth-card">
-    <h1 class="auth-logo">Instagram</h1>
-    {% block auth_form %}{% endblock %}
-  </div>
-</div>
-{% endblock %}
+</body>
+</html>
