@@ -146,3 +146,33 @@ class TestDeletePostUseCase:
 
         assert not output.success
         assert output.error == "Post not found"
+
+
+class TestUpdatePostCaptionLimit:
+    def test_caption_over_2200_chars_rejected(self):
+        """Scenario: Caption length limit."""
+        user = UserFactory()
+        post = PostFactory(owner=user)
+        use_case = UpdatePostUseCase(post_service=PostService())
+
+        output = use_case.execute(
+            UpdatePostInput(post_id=post.id, user_id=user.id, caption="x" * 2201)
+        )
+
+        assert output.success is False
+        assert output.error == "Caption must be 2200 characters or fewer"
+        post.refresh_from_db()
+        assert post.caption != "x" * 2201
+
+    def test_caption_exactly_2200_chars_accepted(self):
+        user = UserFactory()
+        post = PostFactory(owner=user)
+        use_case = UpdatePostUseCase(post_service=PostService())
+
+        output = use_case.execute(
+            UpdatePostInput(post_id=post.id, user_id=user.id, caption="x" * 2200)
+        )
+
+        assert output.success is True
+        post.refresh_from_db()
+        assert post.caption == "x" * 2200

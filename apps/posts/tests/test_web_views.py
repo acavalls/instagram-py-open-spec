@@ -1,7 +1,8 @@
 import pytest
 
 from apps.accounts.tests.factories import UserFactory
-from apps.posts.tests.factories import PostFactory, PostMediaFactory
+from apps.posts.tests.factories import PostFactory
+from apps.social.tests.factories import FollowFactory
 
 pytestmark = pytest.mark.django_db
 
@@ -24,22 +25,24 @@ class TestCreateRandomPostView:
 class TestIndexView:
     def test_personal_feed_on_the_home_page(self, client):
         user = UserFactory()
-        other = UserFactory()
-        own = PostFactory(owner=user, caption="my own post")
-        PostFactory(owner=other, caption="not mine")
-        PostMediaFactory(post=own, file=None) if False else None
+        followed = UserFactory()
+        FollowFactory(follower=user, following=followed)
+        PostFactory(owner=followed, caption="followed post")
+        PostFactory(owner=user, caption="my own post")
         client.force_login(user)
 
         response = client.get("/web/")
 
         assert response.status_code == 200
         content = response.content
-        assert b"my own post" in content
-        assert b"not mine" not in content
+        assert b"followed post" in content
+        assert b"my own post" not in content
 
     def test_pagination_window(self, client):
         user = UserFactory()
-        posts = [PostFactory(owner=user) for _ in range(13)]
+        followed = UserFactory()
+        FollowFactory(follower=user, following=followed)
+        posts = [PostFactory(owner=followed) for _ in range(13)]
         client.force_login(user)
 
         page1 = client.get("/web/")
@@ -118,3 +121,21 @@ class TestDeletePostView:
         assert response.status_code == 200
         assert b"You can only delete your own posts" in response.content
         assert owner.posts.filter(id=post.id).exists()
+
+
+class TestEditCaptionLimit:
+    def test_web_edit_with_oversized_caption_rejected(self, client):
+        """Scenario: Caption length limit."""
+        user = UserFactory()
+        post = PostFactory(owner=user, caption="original")
+        client.force_login(user)
+
+        response = client.post(
+            f"/web/posts/{post.id}/submit-edit/", {"caption": "x" * 2201}
+        )
+
+        assert response.status_code == 200
+        content = response.content.decode()
+        assert "Caption must be 2200 characters or fewer" in content
+        post.refresh_from_db()
+        assert post.caption == "original"
