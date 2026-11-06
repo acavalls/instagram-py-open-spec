@@ -55,3 +55,18 @@ class TestPostModel:
 
         assert not Post.objects.filter(id=post_id).exists()
         assert not PostMedia.objects.filter(post_id=post_id).exists()
+
+
+class TestPostMediaStorage:
+    def test_media_stored_under_dated_path(self):
+        """Scenario: Media stored under dated path."""
+        user = UserFactory()
+        post = PostFactory(owner=user)
+        media = PostMediaFactory(post=post, file=make_image("dated.jpg"))
+
+        assert media.file.name.startswith("post_examples/")
+        assert "/20" in media.file.name  # <year>/<month>/<day> segments present
+
+        url = media.file.url
+
+        assert url.startswith("/media/post_examples/")
