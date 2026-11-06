@@ -152,9 +152,11 @@ class TestTopbarProfileLink:
         content = response.content.decode()
         assert f'href="/web/profile/{user.id}/"' in content
         assert "Profile" in content
+        assert 'class="sidebar"' in content
 
     def test_topbar_has_no_profile_link_for_anonymous(self, client):
         response = client.get("/web/login/")
 
         content = response.content.decode()
         assert "/web/profile/" not in content
+        assert 'class="sidebar"' not in content
