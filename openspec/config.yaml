@@ -16,7 +16,9 @@ context: |
     Fonts. No frontend build step, no SPA framework.
   - Architecture (fixed; not renegotiated in designs): Clean Architecture
     layers — views → use_cases → services → models — with apps organized
-    by domain: accounts, social, posts, api, web.
+    by domain: accounts, posts, social, web. The REST API lives inside the
+    domain apps (serializers/views per app) with routing in config/urls.py;
+    there is no separate api app.
   - Media handling: Pillow; stories and posts use generated placeholder
     images (no file picker).
   - Tests: pytest with pytest-django; every scenario in the specs must
