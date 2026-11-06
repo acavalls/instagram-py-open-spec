@@ -24,10 +24,10 @@ class TestProfileView:
 
         assert response.status_code == 200
         content = response.content.decode()
-        assert f"@{user.username}" in content
+        assert user.username in content
         assert "1</strong> posts" in content
-        assert "my post" in content
-        assert f"post-{post.id}" in content
+        assert "profile-grid__item-wrapper" in content
+        assert f"edit-form-{post.id}" in content
         assert "Edit" in content
 
     def test_other_profile_shows_stats_and_follow_state(self, client):
@@ -40,7 +40,8 @@ class TestProfileView:
         response = client.get(f"/web/profile/{other.id}/")
 
         content = response.content.decode()
-        assert "other post" in content
+        assert "profile-grid__item-wrapper" in content
+        assert "otheruser" in content
         assert "follow-btn--follow" in content
         assert "Edit" not in content
 
@@ -73,8 +74,8 @@ class TestProfileView:
         response = client.get(f"/web/profile/{user.id}/")
 
         content = response.content.decode()
-        assert content.count('<article class="post-card"') == 12
-        assert "Older" in content
+        assert content.count('class="profile-grid__item-wrapper"') == 12
+        assert "infinite-scroll-sentinel" in content
 
     def test_profile_requires_login(self, client):
         user = UserFactory()

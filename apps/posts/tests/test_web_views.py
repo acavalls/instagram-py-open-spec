@@ -1,6 +1,10 @@
+from datetime import timedelta
+
 import pytest
+from django.utils import timezone
 
 from apps.accounts.tests.factories import UserFactory
+from apps.posts.models import Post
 from apps.posts.tests.factories import PostFactory
 from apps.social.tests.factories import FollowFactory
 
@@ -43,15 +47,21 @@ class TestIndexView:
         followed = UserFactory()
         FollowFactory(follower=user, following=followed)
         posts = [PostFactory(owner=followed) for _ in range(13)]
+        now = timezone.now()
+        for idx, post in enumerate(posts):
+            Post.objects.filter(pk=post.pk).update(
+                created_at=now - timedelta(minutes=len(posts) - idx)
+            )
         client.force_login(user)
 
         page1 = client.get("/web/")
-        page2 = client.get("/web/?page=2")
+        page2 = client.get("/web/?page=2", HTTP_HX_REQUEST="true")
 
         assert posts[12].caption.encode() in page1.content
         assert posts[0].caption.encode() in page2.content
-        assert b"Older" in page1.content
-        assert b"Newer" in page2.content
+        assert b"infinite-scroll-sentinel" in page1.content
+        assert b"No more posts" in page2.content
+        assert b"<!DOCTYPE html>" not in page2.content
 
 
 class TestEditFlow:

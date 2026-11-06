@@ -59,7 +59,9 @@ class TestIndexFeed:
         assert response.status_code == 200
         content = response.content.decode()
         assert "my own post" not in content
-        assert "don't follow anyone" in content
+        assert "Share Photos" in content
+        assert "Share your first photo" in content
+        assert "empty-feed__title" in content
 
     def test_feed_without_posts_but_with_follows_shows_other_empty_state(self, client):
         user = UserFactory()
@@ -71,7 +73,7 @@ class TestIndexFeed:
 
         content = response.content.decode()
         assert "No posts from the people you follow" in content
-        assert "don't follow anyone" not in content
+        assert "Share your first photo" not in content
 
 
 class TestSuggestionsPanel:
@@ -87,9 +89,11 @@ class TestSuggestionsPanel:
 
         content = response.content.decode()
         assert "candidateuser" in content
-        suggestions_links = content.split('class="suggestions-list__link"')[1:]
-        assert suggestions_links and "followeduser" not in suggestions_links[0]
-        assert "/web/profile/" in content
+        suggestions_rows = content.split('class="feed-sidebar__suggestion-username"')[
+            1:
+        ]
+        assert suggestions_rows and "followeduser" not in suggestions_rows[0]
+        assert "Suggested for you" in content
 
     def test_suggestions_limited_to_five(self, client):
         user = UserFactory()
@@ -100,7 +104,20 @@ class TestSuggestionsPanel:
         response = client.get("/web/")
 
         content = response.content.decode()
-        assert content.count('class="suggestions-list__link"') == 5
+        assert content.count('class="feed-sidebar__suggestion-username"') == 5
+
+    def test_suggestion_rows_show_avatar_and_follow_button(self, client):
+        """Scenario: Suggestion rows show avatar and follow button."""
+        user = UserFactory(username="mainuser")
+        UserFactory(username="candidateuser")
+
+        _login(client, user)
+        response = client.get("/web/")
+
+        content = response.content.decode()
+        row = content.split('class="feed-sidebar__suggestion"', 1)[1]
+        assert "follow-btn" in row
+        assert "/web/follow/" in row
 
     def test_anonymous_user_redirected_to_login(self, client):
         response = client.get("/web/")
