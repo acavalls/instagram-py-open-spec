@@ -7,55 +7,45 @@
 
 <div class="feed-layout">
   <div class="feed-main">
-    <div class="feed-header">
-      <h2>Welcome, @{{ user.username }}</h2>
-      <form method="post" action="{% url 'web:create_random_post' %}">
-        {% csrf_token %}
-        <button type="submit" class="btn-primary">+ New post</button>
-      </form>
-    </div>
-
-    {% if posts %}
-      <div class="feed-grid">
+    <div id="feed-posts">
+      {% if posts %}
         {% for post in posts %}
           {% include "web/_post_card.html" %}
         {% endfor %}
-      </div>
 
-      <div class="feed-pagination">
-        {% if has_prev %}
-          <a href="?page={{ page|add:'-1' }}" class="feed-pagination__link">&larr; Newer</a>
-        {% endif %}
-        <span class="feed-pagination__current">Page {{ page }}</span>
         {% if has_next %}
-          <a href="?page={{ page|add:'1' }}" class="feed-pagination__link">Older &rarr;</a>
+        <div
+          hx-get="{% url 'web:index' %}?page={{ next_page }}"
+          hx-trigger="revealed"
+          hx-swap="beforeend"
+          hx-target="#feed-posts"
+          hx-indicator="this"
+          class="infinite-scroll-sentinel"
+        >
+          <div class="infinite-scroll-loader htmx-indicator">
+            <div class="spinner"></div>
+          </div>
+        </div>
+        {% else %}
+        <div class="infinite-scroll-end">No more posts</div>
         {% endif %}
-      </div>
-    {% elif not has_follows %}
-      <div class="feed-empty">
-        <p>Your feed is empty because you don't follow anyone yet.</p>
-        <p>Check the suggestions panel to find people to follow.</p>
-      </div>
-    {% else %}
-      <div class="feed-empty">
-        <p>No posts from the people you follow yet.</p>
-      </div>
-    {% endif %}
+      {% elif not has_follows %}
+        <div class="empty-feed">
+          <i class="bi bi-camera"></i>
+          <h2 class="empty-feed__title">Share Photos</h2>
+          <p class="empty-feed__subtitle">When you share photos, they'll appear on your feed.</p>
+          <a href="#" class="empty-feed__cta">Share your first photo</a>
+        </div>
+      {% else %}
+        <div class="empty-feed">
+          <i class="bi bi-camera"></i>
+          <h2 class="empty-feed__title">No posts yet</h2>
+          <p class="empty-feed__subtitle">No posts from the people you follow yet.</p>
+        </div>
+      {% endif %}
+    </div>
   </div>
 
-  <aside class="feed-sidebar">
-    <h3 class="feed-sidebar__title">Suggestions</h3>
-    <ul class="suggestions-list">
-      {% for suggested_user in suggestions %}
-        <li class="suggestions-list__item">
-          <a href="{% url 'web:profile' suggested_user.id %}" class="suggestions-list__link">
-            @{{ suggested_user.username }}
-          </a>
-        </li>
-      {% empty %}
-        <li class="suggestions-list__empty">No suggestions available.</li>
-      {% endfor %}
-    </ul>
-  </aside>
+  {% include "web/_feed_sidebar.html" %}
 </div>
 {% endblock %}

@@ -113,6 +113,17 @@ def index(request):
     posts, has_next = _get_page_feed(request.user.id, page)
     has_follows = FollowService.is_following_anyone(request.user.id)
 
+    if request.headers.get("HX-Request") == "true":
+        return render(
+            request,
+            "web/_feed_posts.html",
+            {
+                "posts": posts,
+                "has_next": has_next,
+                "next_page": page + 1 if has_next else None,
+            },
+        )
+
     stories_use_case = ListFeedStoriesUseCase(story_service=StoryService())
     stories_output = stories_use_case.execute(
         ListFeedStoriesInput(user_id=request.user.id)
@@ -136,6 +147,7 @@ def index(request):
             "has_follows": has_follows,
             "suggestions": suggestions,
             "feed_stories": feed_stories,
+            "next_page": page + 1 if has_next else None,
         },
     )
 
@@ -426,6 +438,19 @@ def profile_view(request, user_id):
         else False
     )
 
+    if request.headers.get("HX-Request") == "true":
+        return render(
+            request,
+            "web/_profile_posts.html",
+            {
+                "profile_user": profile_user,
+                "posts": posts,
+                "is_own_profile": is_own_profile,
+                "has_next": has_next,
+                "next_page": page + 1 if has_next else None,
+            },
+        )
+
     return render(
         request,
         "web/profile.html",
@@ -440,6 +465,7 @@ def profile_view(request, user_id):
             "page": page,
             "has_next": has_next,
             "has_prev": page > 1,
+            "next_page": page + 1 if has_next else None,
         },
     )
 

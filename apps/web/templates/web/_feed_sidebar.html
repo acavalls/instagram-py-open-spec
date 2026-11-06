@@ -1,0 +1,55 @@
+<aside class="feed-sidebar">
+  <div class="feed-sidebar__user">
+    <div class="feed-sidebar__avatar">
+      {% if user.profile_pic %}
+        <img src="{{ user.profile_pic.url }}" alt="{{ user.username }}">
+      {% else %}
+        <i class="bi bi-person-circle"></i>
+      {% endif %}
+    </div>
+    <div class="feed-sidebar__info">
+      <span class="feed-sidebar__username">{{ user.username }}</span>
+      <span class="feed-sidebar__fullname">{{ user.get_full_name|default:user.username }}</span>
+    </div>
+  </div>
+
+  <div class="feed-sidebar__suggestions">
+    <div class="feed-sidebar__suggestions-header">
+      <span class="feed-sidebar__suggestions-title">Suggested for you</span>
+    </div>
+
+    {% for suggested_user in suggestions %}
+    <div class="feed-sidebar__suggestion">
+      <div class="feed-sidebar__suggestion-avatar">
+        {% if suggested_user.profile_pic %}
+          <img src="{{ suggested_user.profile_pic.url }}" alt="{{ suggested_user.username }}">
+        {% else %}
+          <i class="bi bi-person-circle"></i>
+        {% endif %}
+      </div>
+      <div class="feed-sidebar__suggestion-info">
+        <span class="feed-sidebar__suggestion-username">{{ suggested_user.username }}</span>
+        <span class="feed-sidebar__suggestion-reason">Suggested for you</span>
+      </div>
+      {% include "web/_follow_button.html" with user_id=suggested_user.id is_following=False %}
+    </div>
+    {% empty %}
+    <p class="feed-sidebar__no-suggestions">No suggestions available.</p>
+    {% endfor %}
+  </div>
+
+  <footer class="feed-sidebar__footer">
+    <div class="feed-sidebar__links">
+      <a href="#">About</a>
+      <span class="feed-sidebar__separator">·</span>
+      <a href="#">Help</a>
+      <span class="feed-sidebar__separator">·</span>
+      <a href="#">API</a>
+      <span class="feed-sidebar__separator">·</span>
+      <a href="#">Privacy</a>
+      <span class="feed-sidebar__separator">·</span>
+      <a href="#">Terms</a>
+    </div>
+    <span class="feed-sidebar__copyright">&copy; {% now "Y" %} Instagram Clone</span>
+  </footer>
+</aside>

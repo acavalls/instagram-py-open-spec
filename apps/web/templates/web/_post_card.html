@@ -1,18 +1,52 @@
 {% if render_toasts %}{% include "web/_messages.html" %}{% endif %}
 <article class="post-card" id="post-{{ post.id }}">
+  <header class="post-card__header">
+    <div class="post-card__owner">
+      <div class="post-card__avatar">
+        {% if post.owner.profile_pic %}
+          <img src="{{ post.owner.profile_pic.url }}" alt="{{ post.owner.username }}">
+        {% else %}
+          <i class="bi bi-person-circle"></i>
+        {% endif %}
+      </div>
+      <a href="{% url 'web:profile' post.owner.id %}" class="post-card__username">{{ post.owner.username }}</a>
+    </div>
+  </header>
+
   <div class="post-card__media">
     {% if post.media.all %}
       <img src="{{ post.media.all.0.file.url }}" alt="Post by {{ post.owner.username }}">
     {% else %}
-      <div class="post-card__placeholder">no media</div>
+      <div class="post-card__placeholder">
+        <i class="bi bi-image"></i>
+      </div>
     {% endif %}
   </div>
 
+  <div class="post-card__actions">
+    <div class="post-card__action-buttons">
+      <button class="post-card__action" aria-label="Like">
+        <i class="bi bi-heart"></i>
+      </button>
+      <button class="post-card__action" aria-label="Comment">
+        <i class="bi bi-chat"></i>
+      </button>
+      <button class="post-card__action" aria-label="Share">
+        <i class="bi bi-send"></i>
+      </button>
+    </div>
+    <button class="post-card__action post-card__action--save" aria-label="Save">
+      <i class="bi bi-bookmark"></i>
+    </button>
+  </div>
+
   <div class="post-card__content">
-    <p class="post-card__caption">
-      <span class="post-card__username">@{{ post.owner.username }}</span>
-      <span class="post-card__caption-text">{{ post.caption }}</span>
-    </p>
+    {% if post.caption %}
+      <p class="post-card__caption">
+        <span class="post-card__username">{{ post.owner.username }}</span>
+        {{ post.caption }}
+      </p>
+    {% endif %}
     <time class="post-card__time" datetime="{{ post.created_at|date:'c' }}">
       {{ post.created_at|timesince }} ago
     </time>
@@ -38,11 +72,10 @@
         hx-swap="outerHTML"
       >
         {% csrf_token %}
-        <button type="submit" class="post-card__menu-item post-card__menu-item--delete">Delete</button>
+        <button type="submit" class="post-card__menu-item">Delete</button>
       </form>
     </div>
   </div>
-  {% endif %}
-
   <div class="post-card__edit-form-wrapper hidden" id="edit-form-{{ post.id }}"></div>
+  {% endif %}
 </article>

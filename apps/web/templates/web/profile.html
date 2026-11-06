@@ -5,9 +5,17 @@
 {% block content %}
 <div class="profile-container">
   <header class="profile-header">
+    <div class="profile-header__avatar">
+      {% if profile_user.profile_pic %}
+        <img src="{{ profile_user.profile_pic.url }}" alt="{{ profile_user.username }}">
+      {% else %}
+        <i class="bi bi-person-circle"></i>
+      {% endif %}
+    </div>
+
     <div class="profile-header__info">
       <div class="profile-header__top">
-        <h1 class="profile-header__username">@{{ profile_user.username }}</h1>
+        <h1 class="profile-header__username">{{ profile_user.username }}</h1>
         {% if not is_own_profile %}
           {% include "web/_follow_button.html" with user_id=profile_user.id is_following=is_following %}
         {% endif %}
@@ -30,20 +38,81 @@
     </div>
   </header>
 
-  {% if posts %}
-    <div class="feed-grid">
-      {% for post in posts %}
-        {% include "web/_post_card.html" %}
-      {% endfor %}
+  <div class="profile-tabs">
+    <div class="profile-tabs__inner">
+      <a href="#" class="profile-tab profile-tab--active">
+        <i class="bi bi-grid-3x3-gap"></i> POSTS
+      </a>
+      <a href="#" class="profile-tab">
+        <i class="bi bi-bookmark"></i> SAVED
+      </a>
+      <a href="#" class="profile-tab">
+        <i class="bi bi-person-badge"></i> TAGGED
+      </a>
     </div>
+  </div>
 
-    <div class="feed-pagination">
-      {% if has_prev %}
-        <a href="?page={{ page|add:'-1' }}" class="feed-pagination__link">&larr; Newer</a>
-      {% endif %}
-      <span class="feed-pagination__current">Page {{ page }}</span>
+  {% if posts %}
+    <div class="profile-grid" id="profile-posts">
+      {% for post in posts %}
+        <div class="profile-grid__item-wrapper">
+          <a href="#" class="profile-grid__item">
+            {% if post.media.all %}
+              <img src="{{ post.media.all.0.file.url }}" alt="{{ post.caption }}">
+            {% else %}
+              <div class="profile-grid__placeholder">
+                <i class="bi bi-image"></i>
+              </div>
+            {% endif %}
+            <div class="profile-grid__overlay">
+              <span><i class="bi bi-heart-fill"></i> 0</span>
+              <span><i class="bi bi-chat-fill"></i> 0</span>
+            </div>
+          </a>
+          {% if is_own_profile %}
+            <div class="profile-post-menu-wrapper">
+              <button
+                class="profile-grid__menu-btn"
+                title="Menu"
+                onclick="this.closest('.profile-grid__item-wrapper').querySelector('.post-card__menu').classList.toggle('hidden')"
+              >&middot;&middot;&middot;</button>
+              <div class="post-card__menu hidden">
+                <button
+                  class="post-card__menu-item"
+                  hx-get="{% url 'web:get_edit_form' post.id %}"
+                  hx-target="#edit-form-{{ post.id }}"
+                  hx-swap="outerHTML"
+                >Edit</button>
+                <form
+                  hx-post="{% url 'web:delete_post' post.id %}"
+                  hx-target="closest .profile-grid__item-wrapper"
+                  hx-swap="outerHTML"
+                >
+                  {% csrf_token %}
+                  <button type="submit" class="post-card__menu-item">Delete</button>
+                </form>
+              </div>
+            </div>
+            <div class="post-card__edit-form-wrapper hidden" id="edit-form-{{ post.id }}"></div>
+          {% endif %}
+        </div>
+      {% endfor %}
+
       {% if has_next %}
-        <a href="?page={{ page|add:'1' }}" class="feed-pagination__link">Older &rarr;</a>
+      <div
+        hx-get="{% url 'web:profile' profile_user.id %}?page={{ next_page }}"
+        hx-trigger="revealed"
+        hx-swap="beforeend"
+        hx-target="#profile-posts"
+        hx-indicator="this"
+        class="infinite-scroll-sentinel"
+      >
+        <div class="infinite-scroll-loader htmx-indicator">
+          <div class="spinner"></div>
+        </div>
+      </div>
+      {% else %}
+      <div class="infinite-scroll-end">No more posts</div>
       {% endif %}
     </div>
   {% else %}
