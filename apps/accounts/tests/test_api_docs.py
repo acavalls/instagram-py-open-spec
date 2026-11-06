@@ -37,3 +37,22 @@ class TestAdminConsole:
         assert response.status_code == 200
         assert "/admin/login/" in response.request["PATH_INFO"]
         assert b"username" in response.content.lower()
+
+    def test_staff_manages_domain_models(self, client):
+        """Scenario: Staff manages domain models."""
+        from apps.accounts.tests.factories import UserFactory
+        from apps.posts.tests.factories import PostFactory
+        from apps.social.tests.factories import FollowFactory
+
+        staff = UserFactory(is_staff=True, is_superuser=True)
+        UserFactory(username="changelist_user")
+        PostFactory(owner=staff)
+        FollowFactory(follower=staff, following=UserFactory())
+        client.force_login(staff)
+
+        response = client.get("/admin/", follow=True)
+
+        assert response.status_code == 200
+        content = response.content.decode()
+        for model_label in ("Users", "Posts", "Follows"):
+            assert model_label in content
