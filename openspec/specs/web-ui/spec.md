@@ -75,7 +75,8 @@ to the owner profile, the media (or an image placeholder icon when the post
 has no media), an actions row with like, comment, share and save buttons, and
 a content block with the caption prefixed by the owner username and the
 relative creation time. The action buttons SHALL be presentational
-placeholders without behavior. On the owner's own posts the card SHALL keep
+placeholders without behavior. A post with multiple media files SHALL render
+only its first media file. On the owner's own posts the card SHALL keep
 the edit and delete menu.
 
 #### Scenario: Card header shows owner avatar and username link
@@ -90,12 +91,17 @@ the edit and delete menu.
 - **WHEN** a post card renders for a post without media
 - **THEN** the media area shows the image placeholder icon instead of a broken image
 
+#### Scenario: Multiple media renders the first file only
+- **WHEN** a post card or grid item renders for a post with several media files
+- **THEN** the UI shows only the first media file
+
 ### Requirement: Profile page structure
 A profile page SHALL render a header with a large avatar, the username, a
 follow button on other profiles, a stats row (posts, followers, following —
 the following stat opens the following-list modal), and a tabs bar with
 POSTS active and SAVED and TAGGED as placeholders. Grid items SHALL show the
-post media with a hover overlay. The tabs SHALL be presentational
+post media with a hover overlay; a post with multiple media files SHALL
+render only its first media file. The tabs SHALL be presentational
 placeholders except POSTS.
 
 #### Scenario: Profile header shows avatar, stats and tabs

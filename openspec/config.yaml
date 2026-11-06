@@ -24,7 +24,7 @@ context: |
   - Tests: pytest with pytest-django; every scenario in the specs must
     have a test traceable by the scenario name. Coverage must stay >= 80%.
   - Quality gates: ruff (lint + format) and mypy must pass.
-  - Development data: seed_data management commands, no external fixtures.
+  - Development data: seed_demo_data management command, no external fixtures.
 
   Non-negotiable principles:
   1. The spec is the source of truth: every observable behavior change

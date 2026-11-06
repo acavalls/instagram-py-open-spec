@@ -48,7 +48,9 @@ owner's profile grid. The home page SHALL show posts from the users the
 logged-in user follows (defined in the social capability) instead of their
 own posts, with the stories bar (defined in the stories capability) rendered
 above the post list, and SHALL load further pages through HTMX infinite
-scroll. Rendering the home page SHALL purge expired stories before display.
+scroll. A non-HTMX request with a page parameter SHALL render the full page
+with the posts of that window. Rendering the home page SHALL purge expired
+stories before display.
 
 #### Scenario: Personal feed on the home page
 - **WHEN** a logged-in user visits the home page
@@ -65,6 +67,10 @@ scroll. Rendering the home page SHALL purge expired stories before display.
 #### Scenario: Feed loads more posts on scroll
 - **WHEN** the browser reaches the feed sentinel and requests the next page with the HTMX header
 - **THEN** the system responds with only the next window of post cards plus the next sentinel (or the end marker), without the page shell
+
+#### Scenario: Non-HTMX request with a page parameter renders the full page
+- **WHEN** a browser requests the home page with a page parameter and no HTMX header
+- **THEN** the system renders the full page showing the posts of that page window
 
 ### Requirement: Post detail
 The system SHALL allow retrieving a single post by identifier. An unknown
