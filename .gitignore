@@ -25,3 +25,6 @@ staticfiles/
 
 # OS
 .DS_Store
+
+# Working notes (untracked analysis docs)
+gbu-sdd.md
