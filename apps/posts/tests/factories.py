@@ -43,9 +43,7 @@ class StoryFactory(factory.django.DjangoModelFactory):
     owner = factory.SubFactory(UserFactory)
     file = factory.LazyAttribute(lambda _: make_image("test_story.jpg"))
     media_type = Story.MediaType.IMAGE
-    expires_at = factory.LazyAttribute(
-        lambda _: timezone.now() + timedelta(hours=24)
-    )
+    expires_at = factory.LazyAttribute(lambda _: timezone.now() + timedelta(hours=24))
 
 
 class StoryViewFactory(factory.django.DjangoModelFactory):

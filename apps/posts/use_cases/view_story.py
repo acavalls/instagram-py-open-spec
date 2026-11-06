@@ -40,7 +40,8 @@ class ViewStoryUseCase:
             )
 
         if not self._follow_service.is_following(
-            input_dto.viewer_id, story.owner_id  # type: ignore[attr-defined]
+            input_dto.viewer_id,
+            story.owner_id,  # type: ignore[attr-defined]
         ):
             return ViewStoryOutput(
                 success=False, error="You can only view stories from users you follow"

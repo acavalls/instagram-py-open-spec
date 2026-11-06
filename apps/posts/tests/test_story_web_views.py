@@ -35,7 +35,7 @@ class TestStoryCreationView:
         assert response.status_code == 200
         content = response.content.decode()
         assert "Story created" in content
-        assert 'hx-swap-oob' in content
+        assert "hx-swap-oob" in content
         assert user.stories.count() == 1
         assert user.stories.first().file.name.startswith("stories/")
 
