@@ -78,8 +78,8 @@ The system SHALL show a profile page for every user at
 counters of posts, followers and following. An unknown identifier MUST
 respond 404. On their own profile the owner sees the edit and delete
 controls on their posts; on other profiles the visitor sees the follow
-button reflecting the current relationship. The topbar SHALL link to the
-logged-in user's own profile page.
+button reflecting the current relationship. The sidebar (defined in the
+web-ui capability) SHALL link to the logged-in user's own profile page.
 
 #### Scenario: Own profile shows stats and editable grid
 - **WHEN** a user visits their own profile page
@@ -94,8 +94,8 @@ logged-in user's own profile page.
 - **THEN** the system responds 404
 
 #### Scenario: Topbar links to own profile
-- **WHEN** a logged-in user views any page with the topbar
-- **THEN** the topbar shows a Profile link pointing to their own profile page
+- **WHEN** a logged-in user views any authenticated web page
+- **THEN** the sidebar shows a Profile link pointing to their own profile page
 
 ### Requirement: Following list
 A profile SHALL offer a modal listing the users that profile follows,
