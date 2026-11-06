@@ -35,6 +35,7 @@ class TestIndexFeed:
         assert "stranger post" not in content
 
     def test_feed_ordered_newest_first(self, client):
+        """Scenario: Feed ordered newest first with pagination."""
         user = UserFactory()
         followed = UserFactory()
         FollowFactory(follower=user, following=followed)
@@ -62,8 +63,10 @@ class TestIndexFeed:
         assert "Share Photos" in content
         assert "Share your first photo" in content
         assert "empty-feed__title" in content
+        assert "bi bi-camera" in content
 
     def test_feed_without_posts_but_with_follows_shows_other_empty_state(self, client):
+        """Scenario: Feed with follows but no posts shows the secondary empty state."""
         user = UserFactory()
         followed = UserFactory()
         FollowFactory(follower=user, following=followed)
@@ -96,6 +99,7 @@ class TestSuggestionsPanel:
         assert "Suggested for you" in content
 
     def test_suggestions_limited_to_five(self, client):
+        """Scenario: Suggestions limited to newest accounts."""
         user = UserFactory()
         for i in range(8):
             UserFactory(username=f"candidate{i}")

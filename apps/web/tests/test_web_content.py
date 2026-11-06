@@ -49,6 +49,7 @@ class TestFeedInfiniteScroll:
         assert b"infinite-scroll-sentinel" in page1.content
 
     def test_feed_sentinel_targets_next_page(self, client):
+        """Scenario: Feed loads more posts on scroll."""
         user = UserFactory()
         followed = UserFactory()
         FollowFactory(follower=user, following=followed)
