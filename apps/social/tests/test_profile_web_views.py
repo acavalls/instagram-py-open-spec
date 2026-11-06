@@ -139,3 +139,22 @@ class TestFollowingListView:
         )
 
         assert response.status_code == 404
+
+
+class TestTopbarProfileLink:
+    def test_topbar_links_to_own_profile(self, client):
+        """Scenario: Topbar links to own profile."""
+        user = UserFactory()
+
+        client.force_login(user)
+        response = client.get("/web/")
+
+        content = response.content.decode()
+        assert f'href="/web/profile/{user.id}/"' in content
+        assert "Profile" in content
+
+    def test_topbar_has_no_profile_link_for_anonymous(self, client):
+        response = client.get("/web/login/")
+
+        content = response.content.decode()
+        assert "/web/profile/" not in content

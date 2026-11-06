@@ -27,3 +27,13 @@ class TestOpenApiDocs:
 
         assert response.status_code == 200
         assert b"swagger" in response.content.lower()
+
+
+class TestAdminConsole:
+    def test_anonymous_visitor_redirected_to_admin_login(self, client):
+        """Scenario: Anonymous visitor redirected to admin login."""
+        response = client.get("/admin/", follow=True)
+
+        assert response.status_code == 200
+        assert "/admin/login/" in response.request["PATH_INFO"]
+        assert b"username" in response.content.lower()
