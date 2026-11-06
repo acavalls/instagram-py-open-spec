@@ -3,6 +3,8 @@ from uuid import UUID
 
 from apps.posts.services import PostService
 
+MAX_CAPTION_LENGTH = 2200
+
 
 @dataclass(frozen=True, slots=True)
 class UpdatePostInput:
@@ -23,6 +25,12 @@ class UpdatePostUseCase:
         self._post_service = post_service
 
     def execute(self, input_dto: UpdatePostInput) -> UpdatePostOutput:
+        if len(input_dto.caption) > MAX_CAPTION_LENGTH:
+            return UpdatePostOutput(
+                success=False,
+                error="Caption must be 2200 characters or fewer",
+            )
+
         post = self._post_service.get_by_id(input_dto.post_id)
         if not post:
             return UpdatePostOutput(success=False, error="Post not found")
