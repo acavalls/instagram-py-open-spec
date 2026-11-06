@@ -2,23 +2,34 @@
 
 This is the project lifecycle. The agent MUST read this file at the start of
 every request, identify the current stage (from `openspec status`, the
-`tasks.md` checkboxes and the active vs archived changes), and execute the
-stage the user's intent maps to. One stage per request; stop and report
-afterwards.
+`tasks.md` checkboxes and the active vs archived changes), and route the
+user's intent through the pipeline table below.
+
+The lifecycle is a PIPELINE with exactly two human decision points:
+
+- **PAUSE-1 (manual validation)**: after implementation. Question:
+  "¿Te parece correcta la implementación? SI/NO".
+- **PAUSE-2 (post-audit)**: only if the audit found drift. Question:
+  "¿Cerramos el ciclo o corregimos el drift?".
+
+Everything else runs automatically, including the commits at the agreed
+gates via the super-commit procedure (see Conduct rules). A request that
+starts a cycle executes every automatic phase end-to-end and stops only at
+PAUSE-1, PAUSE-2, or an error.
 
 ## Intent routing
 
-| What the user says                             | Stage   | Tool                                        |
-| ---------------------------------------------- | ------- | ------------------------------------------- |
-| "add this artifact" / describes a new feature  | 1       | `/opsx-propose <name> <spec prompt>`        |
-| "ambiguity X resolves to Y" / spec-level change of mechanism Z | 2 / 6.B | `/opsx-update <change> <revision prompt>` |
-| "implement"                                    | 5       | `/opsx-apply` — next pending task group by default; granular scope allowed (see stage 5) |
-| "review the implementation, X is missing"      | 6.B → 5 | `/opsx-update`, then `/opsx-apply` again    |
-| "verify"                                       | 7.B     | `/opsx-verify`                              |
-| "archive"                                      | 8       | `/opsx-archive`                             |
-| "audit"                                        | 9       | skill `spec-audit`                          |
-| drifts found                                   | 9       | regularize: `/opsx-propose` → apply → archive |
-| "change mechanism Z" (no artifact named, info provided as file or description) | decision tree below | A / B / new change |
+| What the user says | Action |
+| --- | --- |
+| Describes a new feature / "propon X" / "haz X" (no active cycle) | **Phase A** (propose → auto-decide ambiguities → validate → commit(plan) → apply → quality gates → commit(impl)) → **PAUSE-1** |
+| "SI" (or equivalent approval at PAUSE-1) | **Phase B** (verify → archive → commit(archive)) → **Phase C** (audit) → close or **PAUSE-2** |
+| "NO <explanation>" (rejection at PAUSE-1) | Decide from the explanation: `/opsx-update <change> <revision>` (artifacts wrong) or `/opsx-apply` (re-implementation) → quality gates → new commits (never amend) → **PAUSE-1** again |
+| "cerramos" (post-audit, no drift or accepted drift) | Close the cycle with a final report |
+| "corregimos" (post-audit, drift found) | Regularization mini-pipeline: `/opsx-propose` → apply → verify → archive → commit → audit again, until `IN SYNC` |
+| "verify" / "archive" / "audit" / "implement[ group N]" | Direct re-entry into that stage (mid-cycle corrections) |
+| "ambiguity X resolves to Y" / spec-level change of mechanism Z | `/opsx-update <change> <revision prompt>` |
+| "review the implementation, X is missing" | `/opsx-update`, then `/opsx-apply` again, then quality gates and continue the pipeline |
+| "change mechanism Z" (no artifact named) | Decision tree below |
 
 ### Decision tree for "change mechanism Z"
 
@@ -33,12 +44,12 @@ agent locates where the mechanism lives today and picks the path:
 
 2. **Decide** by state:
 
-   | Found in                        | Path                                                                   |
-   | ------------------------------- | ---------------------------------------------------------------------- |
-   | An active change (not archived) | **A**: `/opsx-update <change> <revision>` → re-apply affected tasks    |
-   | A living spec (archived)        | **B**: `/opsx-propose` a new change with a `MODIFIED` delta → validate → user commit → apply → archive |
-   | Nowhere                         | `/opsx-propose` a new change: the user's information becomes new requirements (new capability or `ADDED` requirement) |
-   | Implemented but not archived, and the request changes the change's **intent** (not a refinement) | Say so and propose **B** (or a fresh `/opsx-new`), instead of patching with A |
+   | Found in | Path |
+   | --- | --- |
+   | An active change (not archived) | **A**: `/opsx-update <change> <revision>` → re-apply affected tasks |
+   | A living spec (archived) | **B**: `/opsx-propose` a new change with a `MODIFIED` delta → full pipeline |
+   | Nowhere | `/opsx-propose` a new change: the user's information becomes new requirements |
+   | Implemented but not archived, and the request changes the change's **intent** (not a refinement) | Say so and propose **B** (or a fresh change), instead of patching with A |
 
 3. **Execute** that single stage, using the user's information (file,
    description, whatever provided) as the input of the revision, then stop
@@ -47,18 +58,11 @@ agent locates where the mechanism lives today and picks the path:
 Never assume when the state is ambiguous (e.g. two active changes touch the
 same mechanism): ask the user before writing anything.
 
+## Phases
 
-## Stages
+### Phase A — plan and implement (automatic)
 
-1. **Create the change in the specification:**
-
-   ```
-   /opsx-propose <change-name> <description>
-   ```
-
-   Creates the change and generates all artifacts in one step
-   (proposal.md → specs/<capability>/spec.md → design.md → tasks.md).
-   CLI steps the agent runs:
+1. **Propose** (`/opsx-propose <change-name> <description>`):
    `openspec new change` → `openspec status --change <name> --json` →
    `openspec instructions <artifact> --change <name> --json` per artifact,
    inspecting the reference codebase (`/home/ale/mapfre/personal/django_ig`)
@@ -67,80 +71,73 @@ same mechanism): ask the user before writing anything.
    MUST/SHALL; scenarios as `#### Scenario:` with WHEN/THEN bullets
    (exactly 4 hashtags); every requirement needs at least one scenario.
 
-2. **List ambiguities that need a business decision:**
+2. **Ambiguities — auto-resolved, never delegated to the user.** The agent
+   resolves every business decision itself, choosing the reasonable
+   alternative (parity with the reference app is the default tie-breaker),
+   and documents each decision in `design.md` (or `proposal.md`) as
+   "Decision: ... (agent-decided, flagged for review)". The decisions are
+   listed in the report so the user can overturn any of them later with
+   `/opsx-update`. Do not pause for ambiguity questions.
 
-   After step 1, list the real ambiguities that need a business decision and
-   resolve them one by one with the user. Each resolution is applied with
-   `/opsx-update <change> <revision prompt>`, which revises the artifacts and
-   propagates the change in both directions for coherence (a change in specs
-   may require revising the proposal and vice versa). It shows every revision
-   before writing and never edits code. (`/opsx-continue` creates artifacts
-   that do not exist yet; it does not revise existing ones.)
+3. **Validate**: `openspec validate <change-name>`.
 
-3. **Verify the specification format:**
+4. **Commit gate (planning)** — super-commit (see Conduct rules), then push.
 
-   ```
-   openspec validate <change-name>
-   ```
+5. **Implementation** (`/opsx-apply`, all remaining task groups without
+   stopping). The smallest implementation unit is a single task; never split
+   a task. Per `config.yaml` operations guidance, run pytest and ruff after
+   each task. Finish with the full quality gates: pytest (all pass),
+   coverage >= 80%, ruff, mypy.
 
-4. **Commit (planning).** The user commits; the agent announces the gate.
+6. **Commit gate (implementation)** — super-commit, then push.
 
-5. **Implementation:**
+7. **PAUSE-1**: report what was implemented (artifacts, tests, gates) and
+   ask: "¿Te parece correcta la implementación? SI/NO". Suggest the manual
+   browser checks when they exist, but do not require them.
 
-   ```
-   /opsx-apply
-   ```
+### Phase B — verify and archive (automatic, after "SI")
 
-   **Execution granularity** (state is the `tasks.md` checkbox list):
+8. **Verify** (`/opsx-verify`): completeness, requirement mapping, scenario
+   coverage, design adherence. CRITICAL issues loop back to
+   `/opsx-update` + `/opsx-apply` + new commits before archiving.
 
-   - "implement" → the next pending task **group** (the `## N.` sections in
-     `tasks.md`), then stop and report.
-   - "implement group N" → that group only.
-   - "implement task N.M" / "implement up to N.M" → that task / every task up
-     to and including N.M.
-   - "implement everything" → all remaining groups without stopping.
+9. **Archive** (`/opsx-archive`): sync the delta into the living spec, move
+   the change to `openspec/changes/archive/YYYY-MM-DD-<name>/`.
 
-   The smallest implementation unit is a single task; never split a task.
-   Per `config.yaml` operations guidance, run pytest and ruff after each
-   task.
+10. **Commit gate (archive)** — super-commit, then push. Audit (Phase C)
+    must run on a clean tree because it uses `git log` as evidence.
 
-6. **Manual validation.**
+### Phase C — audit and close (automatic, with PAUSE-2 on drift)
 
-   6.B. Optional: if the implementation revealed that the plan was wrong or
-   incomplete, `/opsx-update <change> <what to change>` first, then
-   `/opsx-apply` again to carry the revised plan into code.
+11. **Audit** (skill `spec-audit`).
 
-7. **Commit (implementation).** The user commits; the agent announces the gate.
+    - `IN SYNC` → close the cycle with a final report. Done.
+    - Drift found → **PAUSE-2**: report the findings and ask
+      "¿Cerramos el ciclo o corregimos el drift?".
+      - "corregimos" → regularization mini-pipeline (propose → apply →
+        verify → archive → super-commit) → audit again, repeat until
+        `IN SYNC`.
+      - "cerramos" → close with the findings documented for a future cycle.
 
-   7.B. `/opsx-verify` — check the implementation matches the artifacts
-   before archiving.
+## Super-commit procedure (used at every commit gate)
 
-8. **Archive the change and turn the delta into the living spec:**
-
-   ```
-   /opsx-archive
-   ```
-
-   Merges the delta into `openspec/specs/<capability>/spec.md` (the anchor).
-
-   8.B. **Commit (archive).** The user commits the new living spec and the
-   archived change, then pushes. The agent announces the gate; audit (stage
-   9) must run on a clean tree because it uses `git log` as evidence.
-
-9. **Run the spec-audit skill:**
-
-   ```
-   spec-audit → reports drifts
-   ```
-
-   Then regularize each drift:
-   `/opsx-propose <prompt describing the drift fixes>` → `/opsx-apply` →
-   `/opsx-archive` — the living specs end up describing reality again.
+1. Inspect the full repo state: `git status --short`, `git diff --stat`,
+   `git log --oneline -10`.
+2. Group changes by intent (feat/fix/refactor/test/chore/docs/config);
+   never mix unrelated changes in one commit.
+3. Check for secrets or suspicious files (.env, credentials, keys); if any
+   appear, stop and ask before committing.
+4. `git add <files>` per group, commit each group with a semantic message
+   following the repo style, then `git push`.
+5. Never amend, never force push, never skip hooks. If the grouping is
+   genuinely ambiguous, stop and ask.
 
 ## Conduct rules
 
-- Never `git commit` / `git push` — commits belong to the user. When a
-  commit gate is reached, say so and stop.
+- Commits and pushes run automatically at the agreed gates only
+  (planning, implementation, archive, regularization), via the
+  super-commit procedure. Any git write outside those gates requires an
+  explicit user request.
 - The spec is the source of truth: every observable behavior change lands as
   an OpenSpec change; behavior not described in `openspec/specs/` is a
   defect.
