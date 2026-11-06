@@ -1,0 +1,12 @@
+{% if is_following %}
+<form hx-post="{% url 'web:unfollow' user_id %}" hx-target="this" hx-swap="outerHTML">
+  {% csrf_token %}
+  <button type="submit" class="follow-btn follow-btn--unfollow">Following</button>
+</form>
+{% else %}
+<form hx-post="{% url 'web:follow' user_id %}" hx-target="this" hx-swap="outerHTML">
+  {% csrf_token %}
+  <button type="submit" class="follow-btn follow-btn--follow">Follow</button>
+</form>
+{% endif %}
+{% include "web/_messages.html" %}

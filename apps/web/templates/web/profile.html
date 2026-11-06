@@ -1,0 +1,55 @@
+{% extends "web/base.html" %}
+
+{% block title %}{{ profile_user.username }} - Instagram{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+  <header class="profile-header">
+    <div class="profile-header__info">
+      <div class="profile-header__top">
+        <h1 class="profile-header__username">@{{ profile_user.username }}</h1>
+        {% if not is_own_profile %}
+          {% include "web/_follow_button.html" with user_id=profile_user.id is_following=is_following %}
+        {% endif %}
+      </div>
+
+      <div class="profile-header__stats">
+        <span class="profile-header__stat"><strong>{{ posts_count }}</strong> posts</span>
+        <span class="profile-header__stat"><strong>{{ followers_count }}</strong> followers</span>
+        <span class="profile-header__stat">
+          <strong>{{ following_count }}</strong>
+          <a
+            href="{% url 'web:following_list' profile_user.id %}"
+            class="profile-header__stat-link"
+            hx-get="{% url 'web:following_list' profile_user.id %}"
+            hx-target="#modal-container"
+            hx-swap="innerHTML"
+          >following</a>
+        </span>
+      </div>
+    </div>
+  </header>
+
+  {% if posts %}
+    <div class="feed-grid">
+      {% for post in posts %}
+        {% include "web/_post_card.html" %}
+      {% endfor %}
+    </div>
+
+    <div class="feed-pagination">
+      {% if has_prev %}
+        <a href="?page={{ page|add:'-1' }}" class="feed-pagination__link">&larr; Newer</a>
+      {% endif %}
+      <span class="feed-pagination__current">Page {{ page }}</span>
+      {% if has_next %}
+        <a href="?page={{ page|add:'1' }}" class="feed-pagination__link">Older &rarr;</a>
+      {% endif %}
+    </div>
+  {% else %}
+    <div class="feed-empty">
+      <p>No posts yet.</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,40 @@
+<div
+  class="following-overlay"
+  hx-on:click="if (event.target === this) document.getElementById('modal-container').innerHTML = ''"
+>
+  <div class="following-modal">
+    <header class="following-modal__header">
+      <h2 class="following-modal__title">Following</h2>
+      <button
+        class="following-modal__close"
+        hx-on:click="document.getElementById('modal-container').innerHTML = ''"
+      >&times;</button>
+    </header>
+
+    <div class="following-modal__search">
+      <input
+        type="text"
+        placeholder="Search"
+        class="following-modal__search-input"
+        hx-get="{% url 'web:following_list' profile_user.id %}"
+        hx-target="#following-list-body"
+        hx-trigger="input changed delay:300ms"
+        hx-include="this"
+        name="q"
+        value="{{ query|default:'' }}"
+      >
+    </div>
+
+    <ul class="following-modal__list" id="following-list-body">
+      {% for followed_user in following_users %}
+        <li class="following-modal__item">
+          <a href="{% url 'web:profile' followed_user.id %}" class="following-modal__link">
+            @{{ followed_user.username }}
+          </a>
+        </li>
+      {% empty %}
+        <li class="following-modal__item following-modal__item--empty">No users found.</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>

@@ -9,6 +9,7 @@ from django.http import Http404
 from django.shortcuts import redirect, render
 from django.views.decorators.http import require_POST
 
+from apps.accounts.models import User
 from apps.accounts.services import UserService
 from apps.accounts.use_cases import (
     AuthenticateUserInput,
@@ -25,6 +26,18 @@ from apps.posts.use_cases import (
     DeletePostUseCase,
     UpdatePostInput,
     UpdatePostUseCase,
+)
+from apps.social.models import Follow
+from apps.social.services import FeedService, FollowService
+from apps.social.use_cases import (
+    FollowUserInput,
+    FollowUserUseCase,
+    GetUserSuggestionsInput,
+    GetUserSuggestionsUseCase,
+    ListFeedInput,
+    ListFeedUseCase,
+    UnfollowUserInput,
+    UnfollowUserUseCase,
 )
 
 POSTS_PER_PAGE = 12
@@ -64,16 +77,39 @@ def _get_page_posts(user_id, page: int) -> tuple[list[Post], bool]:
     return posts, has_next
 
 
+def _get_page_feed(user_id, page: int) -> tuple[list[Post], bool]:
+    offset = (page - 1) * POSTS_PER_PAGE
+    feed_output = ListFeedUseCase(feed_service=FeedService()).execute(
+        ListFeedInput(
+            user_id=user_id,
+            limit=POSTS_PER_PAGE + 1,
+            offset=offset,
+        )
+    )
+    posts = list(feed_output.posts or [])
+    has_next = len(posts) > POSTS_PER_PAGE
+    if has_next:
+        posts = posts[:POSTS_PER_PAGE]
+    return posts, has_next
+
+
 @login_required
 def index(request):
-    """Personal feed — the logged-in user's own posts, newest first."""
+    """Followed-users feed — posts from the users the logged-in user follows."""
     try:
         page = int(request.GET.get("page", 1))
     except ValueError:
         page = 1
     page = max(page, 1)
 
-    posts, has_next = _get_page_posts(request.user.id, page)
+    posts, has_next = _get_page_feed(request.user.id, page)
+    has_follows = FollowService.is_following_anyone(request.user.id)
+
+    suggestions_use_case = GetUserSuggestionsUseCase(feed_service=FeedService())
+    suggestions_output = suggestions_use_case.execute(
+        GetUserSuggestionsInput(user_id=request.user.id, limit=5)
+    )
+    suggestions = suggestions_output.users or []
 
     return render(
         request,
@@ -83,6 +119,8 @@ def index(request):
             "page": page,
             "has_next": has_next,
             "has_prev": page > 1,
+            "has_follows": has_follows,
+            "suggestions": suggestions,
         },
     )
 
@@ -254,3 +292,123 @@ def delete_post(request, post_id):
 
     messages.error(request, output.error or "Failed to delete post")
     return render(request, "web/_toast.html")
+
+
+@login_required
+@require_POST
+def follow_user(request, user_id):
+    """Follow a user — HTMX button swap."""
+    use_case = FollowUserUseCase(follow_service=FollowService())
+    output = use_case.execute(
+        FollowUserInput(follower_id=request.user.id, following_id=user_id)
+    )
+
+    if output.success:
+        messages.success(request, "Followed successfully")
+        return render(
+            request,
+            "web/_follow_button.html",
+            {"user_id": user_id, "is_following": True},
+        )
+
+    messages.error(request, output.error or "Failed to follow")
+    return render(
+        request,
+        "web/_follow_button.html",
+        {"user_id": user_id, "is_following": False},
+    )
+
+
+@login_required
+@require_POST
+def unfollow_user(request, user_id):
+    """Unfollow a user — HTMX button swap."""
+    use_case = UnfollowUserUseCase(follow_service=FollowService())
+    output = use_case.execute(
+        UnfollowUserInput(follower_id=request.user.id, following_id=user_id)
+    )
+
+    if output.success:
+        messages.success(request, "Unfollowed successfully")
+        return render(
+            request,
+            "web/_follow_button.html",
+            {"user_id": user_id, "is_following": False},
+        )
+
+    messages.error(request, output.error or "Failed to unfollow")
+    return render(
+        request,
+        "web/_follow_button.html",
+        {"user_id": user_id, "is_following": True},
+    )
+
+
+@login_required
+def profile_view(request, user_id):
+    """Profile page — posts grid, counters and follow state."""
+    try:
+        profile_user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        raise Http404("User not found") from None
+
+    try:
+        page = int(request.GET.get("page", 1))
+    except ValueError:
+        page = 1
+    page = max(page, 1)
+
+    posts, has_next = _get_page_posts(profile_user.id, page)
+
+    is_own_profile = request.user.id == profile_user.id
+    is_following = (
+        FollowService.is_following(request.user.id, profile_user.id)
+        if not is_own_profile
+        else False
+    )
+
+    return render(
+        request,
+        "web/profile.html",
+        {
+            "profile_user": profile_user,
+            "posts": posts,
+            "posts_count": Post.objects.filter(owner=profile_user).count(),
+            "followers_count": Follow.objects.filter(following=profile_user).count(),
+            "following_count": Follow.objects.filter(follower=profile_user).count(),
+            "is_own_profile": is_own_profile,
+            "is_following": is_following,
+            "page": page,
+            "has_next": has_next,
+            "has_prev": page > 1,
+        },
+    )
+
+
+@login_required
+def following_list(request, user_id):
+    """List of users that a given user is following — modal with search."""
+    try:
+        profile_user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        raise Http404("User not found") from None
+
+    query = request.GET.get("q", "").strip()
+    following_users = FollowService.get_following(profile_user.id)
+
+    if query:
+        following_users = (
+            following_users.filter(username__icontains=query)
+            | following_users.filter(first_name__icontains=query)
+            | following_users.filter(last_name__icontains=query)
+        )
+
+    return render(
+        request,
+        "web/_following_list_modal.html",
+        {
+            "profile_user": profile_user,
+            "following_users": following_users,
+            "query": query,
+        },
+    )

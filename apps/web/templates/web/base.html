@@ -17,6 +17,7 @@
     <div class="topbar-right">
       {% if user.is_authenticated %}
         <span class="topbar-user">@{{ user.username }}</span>
+        <a href="{% url 'web:profile' user.id %}" class="link-btn">Profile</a>
         <form method="post" action="{% url 'web:logout' %}">{% csrf_token %}
           <button type="submit" class="link-btn">Log out</button>
         </form>
@@ -32,5 +33,7 @@
   <main class="main">
     {% block content %}{% endblock %}
   </main>
+
+  <div id="modal-container"></div>
 </body>
 </html>
