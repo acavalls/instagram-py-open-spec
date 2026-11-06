@@ -1,7 +1,9 @@
 import uuid
+from datetime import timedelta
 
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 
 
 class Post(models.Model):
@@ -69,3 +71,76 @@ class PostMedia(models.Model):
 
     def __str__(self) -> str:
         return f"Media {self.id} for Post {self.post_id}"  # type: ignore
+
+
+class Story(models.Model):
+    """Story entity representing a temporary user story (expires after 24h)."""
+
+    class MediaType(models.TextChoices):
+        IMAGE = "image", "Image"
+        VIDEO = "video", "Video"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)  # type: ignore
+    owner = models.ForeignKey(  # type: ignore
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="stories",
+    )
+    file = models.ImageField(upload_to="stories/%Y/%m/%d/")  # type: ignore
+    media_type = models.CharField(  # type: ignore
+        max_length=10,
+        choices=MediaType.choices,
+        default=MediaType.IMAGE,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)  # type: ignore
+    expires_at = models.DateTimeField()  # type: ignore
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["owner", "-created_at"]),
+            models.Index(fields=["expires_at"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"Story {self.id} by {self.owner.username}"  # type: ignore
+
+    def save(self, *args, **kwargs):
+        if not self.expires_at:
+            self.expires_at = timezone.now() + timedelta(hours=24)
+        super().save(*args, **kwargs)
+
+    def is_expired(self) -> bool:
+        return timezone.now() > self.expires_at
+
+
+class StoryView(models.Model):
+    """Tracks which users have viewed a story."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)  # type: ignore
+    story = models.ForeignKey(  # type: ignore
+        Story,
+        on_delete=models.CASCADE,
+        related_name="views",
+    )
+    viewer = models.ForeignKey(  # type: ignore
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="story_views",
+    )
+    viewed_at = models.DateTimeField(auto_now_add=True)  # type: ignore
+
+    class Meta:
+        ordering = ["-viewed_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["story", "viewer"],
+                name="unique_story_viewer",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["story", "viewer"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"StoryView {self.id}: {self.viewer.username} viewed {self.story_id}"  # type: ignore

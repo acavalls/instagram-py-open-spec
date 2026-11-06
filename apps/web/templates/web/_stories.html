@@ -1,0 +1,42 @@
+<section class="stories" id="stories-bar">
+  <div class="stories__item stories__item--yours">
+    <form
+      hx-post="{% url 'web:create_story' %}"
+      hx-target="#messages"
+      hx-swap="innerHTML"
+    >
+      {% csrf_token %}
+      <button type="submit" class="stories__avatar stories__avatar--add">
+        {% if user.profile_pic %}
+          <img src="{{ user.profile_pic.url }}" alt="Your story">
+        {% else %}
+          <i class="bi bi-person-circle"></i>
+        {% endif %}
+        <span class="stories__add-icon">
+          <i class="bi bi-plus"></i>
+        </span>
+      </button>
+    </form>
+    <span class="stories__label">Your story</span>
+  </div>
+
+  {% for group in feed_stories %}
+  <div class="stories__item">
+    <form
+      hx-post="{% url 'web:view_story' story_id=group.stories.0.id %}"
+      hx-target="#messages"
+      hx-swap="innerHTML"
+    >
+      {% csrf_token %}
+      <button type="submit" class="stories__avatar {% if group.stories.0.is_viewed %}stories__avatar--viewed{% else %}stories__avatar--unseen{% endif %}">
+        {% if group.user.profile_pic %}
+          <img src="{{ group.user.profile_pic.url }}" alt="{{ group.user.username }}">
+        {% else %}
+          <i class="bi bi-person-circle"></i>
+        {% endif %}
+      </button>
+    </form>
+    <span class="stories__label">{{ group.user.username }}</span>
+  </div>
+  {% endfor %}
+</section>

@@ -8,8 +8,13 @@ from django.core.management.base import BaseCommand
 from apps.accounts.models import User
 from apps.accounts.services import UserService
 from apps.accounts.use_cases import RegisterUserInput, RegisterUserUseCase
-from apps.posts.services import PostService
-from apps.posts.use_cases import CreatePostInput, CreatePostUseCase
+from apps.posts.services import PostService, StoryService
+from apps.posts.use_cases import (
+    CreatePostInput,
+    CreatePostUseCase,
+    CreateStoryInput,
+    CreateStoryUseCase,
+)
 from apps.social.services import FollowService
 
 DEMO_USERS = ["demo_alice", "demo_bob", "demo_carol", "demo_dave", "demo_eve"]
@@ -21,6 +26,8 @@ DEMO_FOLLOWS = [
     ("demo_bob", "demo_alice"),
     ("demo_carol", "demo_alice"),
 ]
+
+DEMO_STORY_OWNERS = ["demo_bob", "demo_carol"]
 
 DEMO_PASSWORD = "demopass123"
 
@@ -105,5 +112,17 @@ class Command(BaseCommand):
                 )
                 return
             self.stdout.write(f"Created post for {owner.username}")
+
+        story_service = StoryService()
+        for owner_name in DEMO_STORY_OWNERS:
+            output = CreateStoryUseCase(story_service=story_service).execute(
+                CreateStoryInput(owner_id=users[owner_name].id)
+            )
+            if not output.success:
+                self.stderr.write(
+                    self.style.ERROR(f"Failed story for {owner_name}: {output.error}")
+                )
+                return
+            self.stdout.write(f"Created story for {owner_name}")
 
         self.stdout.write(self.style.SUCCESS("Demo data seeded successfully"))

@@ -18,6 +18,8 @@ urlpatterns = [
         name="following_list",
     ),
     path("posts/create/", views.create_random_post, name="create_random_post"),
+    path("stories/create/", views.create_story, name="create_story"),
+    path("stories/<uuid:story_id>/view/", views.view_story, name="view_story"),
     path("posts/<uuid:post_id>/edit-form/", views.get_edit_form, name="get_edit_form"),
     path("posts/<uuid:post_id>/cancel-edit/", views.cancel_edit, name="cancel_edit"),
     path("posts/<uuid:post_id>/submit-edit/", views.submit_edit, name="submit_edit"),

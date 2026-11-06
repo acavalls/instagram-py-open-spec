@@ -28,7 +28,9 @@
     </div>
   </nav>
 
-  {% include "web/_messages.html" %}
+  <div id="messages">
+    {% include "web/_messages.html" %}
+  </div>
 
   <main class="main">
     {% block content %}{% endblock %}

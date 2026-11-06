@@ -506,7 +506,7 @@ body {
 
 .follow-btn--unfollow {
   background: transparent;
-  color: var(--text-primary);
+  color: var(--text);
   border-color: var(--border);
 }
 
@@ -536,11 +536,11 @@ body {
 }
 
 .profile-header__stat strong {
-  color: var(--text-primary);
+  color: var(--text);
 }
 
 .profile-header__stat-link {
-  color: var(--text-primary);
+  color: var(--text);
   text-decoration: none;
   font-weight: 600;
 }
@@ -618,11 +618,93 @@ body {
 }
 
 .following-modal__link {
-  color: var(--text-primary);
+  color: var(--text);
   text-decoration: none;
   font-weight: 500;
 }
 
 .following-modal__link:hover {
   text-decoration: underline;
+}
+
+/* Stories bar */
+.stories {
+  display: flex;
+  gap: 1.25rem;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow-x: auto;
+}
+
+.stories__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 4.5rem;
+}
+
+.stories__avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.75rem;
+  height: 3.75rem;
+  padding: 0;
+  border: 3px solid transparent;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+  font-size: 2rem;
+  color: var(--text-secondary);
+  overflow: hidden;
+}
+
+.stories__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.stories__avatar--add {
+  border-color: var(--border);
+  position: relative;
+}
+
+.stories__avatar--unseen {
+  border-color: var(--blue);
+}
+
+.stories__avatar--viewed {
+  border-color: var(--border);
+  opacity: 0.6;
+}
+
+.stories__add-icon {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  background: var(--blue);
+  color: #fff;
+  border-radius: 50%;
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+.stories__label {
+  max-width: 4.5rem;
+  font-size: 0.75rem;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }

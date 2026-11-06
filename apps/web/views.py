@@ -18,14 +18,20 @@ from apps.accounts.use_cases import (
     RegisterUserUseCase,
 )
 from apps.posts.models import Post
-from apps.posts.services import PostService
+from apps.posts.services import PostService, StoryService
 from apps.posts.use_cases import (
     CreatePostInput,
     CreatePostUseCase,
+    CreateStoryInput,
+    CreateStoryUseCase,
     DeletePostInput,
     DeletePostUseCase,
+    ListFeedStoriesInput,
+    ListFeedStoriesUseCase,
     UpdatePostInput,
     UpdatePostUseCase,
+    ViewStoryInput,
+    ViewStoryUseCase,
 )
 from apps.social.models import Follow
 from apps.social.services import FeedService, FollowService
@@ -96,6 +102,8 @@ def _get_page_feed(user_id, page: int) -> tuple[list[Post], bool]:
 @login_required
 def index(request):
     """Followed-users feed — posts from the users the logged-in user follows."""
+    StoryService.cleanup_expired()
+
     try:
         page = int(request.GET.get("page", 1))
     except ValueError:
@@ -104,6 +112,12 @@ def index(request):
 
     posts, has_next = _get_page_feed(request.user.id, page)
     has_follows = FollowService.is_following_anyone(request.user.id)
+
+    stories_use_case = ListFeedStoriesUseCase(story_service=StoryService())
+    stories_output = stories_use_case.execute(
+        ListFeedStoriesInput(user_id=request.user.id)
+    )
+    feed_stories = stories_output.stories_grouped_by_user or []
 
     suggestions_use_case = GetUserSuggestionsUseCase(feed_service=FeedService())
     suggestions_output = suggestions_use_case.execute(
@@ -121,7 +135,52 @@ def index(request):
             "has_prev": page > 1,
             "has_follows": has_follows,
             "suggestions": suggestions,
+            "feed_stories": feed_stories,
         },
+    )
+
+
+@login_required
+@require_POST
+def create_story(request):
+    """Create a story with a random placeholder image."""
+    use_case = CreateStoryUseCase(story_service=StoryService())
+    output = use_case.execute(CreateStoryInput(owner_id=request.user.id))
+
+    if output.success:
+        messages.success(request, "Story created")
+        return _render_toast_with_stories(request)
+
+    messages.error(request, output.error or "Failed to create story")
+    return _render_toast_with_stories(request)
+
+
+@login_required
+@require_POST
+def view_story(request, story_id):
+    """Mark a followed user's story as viewed."""
+    use_case = ViewStoryUseCase(story_service=StoryService())
+    output = use_case.execute(
+        ViewStoryInput(story_id=story_id, viewer_id=request.user.id)
+    )
+
+    if output.success:
+        messages.success(request, "Story viewed")
+        return _render_toast_with_stories(request)
+
+    messages.error(request, output.error or "Failed to view story")
+    return _render_toast_with_stories(request)
+
+
+def _render_toast_with_stories(request):
+    """Render the messages toast plus an out-of-band stories bar update."""
+    stories_output = ListFeedStoriesUseCase(story_service=StoryService()).execute(
+        ListFeedStoriesInput(user_id=request.user.id)
+    )
+    return render(
+        request,
+        "web/_toast_with_stories.html",
+        {"feed_stories": stories_output.stories_grouped_by_user or []},
     )
 
 
